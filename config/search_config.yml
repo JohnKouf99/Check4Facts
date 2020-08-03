@@ -1,0 +1,9 @@
+basic:
+  filename: 'statements.csv'
+  total_num: 30  # For now, use only multiples of 'num' param
+api_specific:
+  cx: 'Custom-search-engine-ID'
+  lr: 'lang_el'
+  num: 10  # This can't be greater than 10
+standard_query:
+  api_key: 'Secret-API-key'
