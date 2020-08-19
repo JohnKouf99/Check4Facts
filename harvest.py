@@ -70,7 +70,7 @@ def harvest_from_csv(filename: str) :
                         html_page = res.content
                         soup = BeautifulSoup(html_page, 'lxml')
                         
-                        # Discard every tag that is in our blacklist. s.decompose() can be replaced with s.extract() that does not delete the extracted tags.
+                        # Discard every tag that is in our blacklist. s.decompose() can be replaced with s.extract(), which does not delete the extracted tags, enabling the storing of those tags in a list.
                         [s.decompose() for bl in blacklist for s in soup.select(bl)]
 
                         allText = soup.findAll(text=True)
@@ -85,7 +85,7 @@ def harvest_from_csv(filename: str) :
                             if t.parent.name not in ['[document]', 'style']:
                                 output_text += f'{t} '
 
-                        # Uncomment line below to remove newlines and tabs
+                        # Right now we keep the format of the text inside the HTML page. Uncomment line below to remove whitespaces.
                         # output_text = " ".join(output_text.split())
                         writer.writerow({'link': row['link'], 'content': output_text})
                         print(f'\tText from link: {row["link"]} persisted on {output_filename}.')
@@ -99,10 +99,11 @@ def harvest_from_csv(filename: str) :
                         logging.error(f'Ooops: Something Else: {err} on link {row["link"]}')
 
                 # Link is a file (.pdf, .doc/docx, .txt, etc.)
-                # The file crawling implementation has some issues that are listed on Trello.
+                # The file crawling implementation has some issues that are mentioned on Trello.
                 else:
                     try:
                         raw = parser.from_file(row['link'])
+                        # Whitespaces are removed here, as paragraphs probably won't be useful from these type of files
                         output_text = " ".join(raw['content'].split()) if raw['content'] != None else 'No text from parse'
                         writer.writerow({'link': row['link'], 'content': output_text})
                         print(f'\tText from file {row["link"]} persisted on {output_filename}.')
@@ -119,6 +120,7 @@ def harvest_from_csv(filename: str) :
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         arg = sys.argv[1]
+        # logs folder is created if it doesn't exist on the file's directory containing a log file for each execution of the app.
         Path('logs').mkdir(exist_ok=True)
 
         now = datetime.now()
