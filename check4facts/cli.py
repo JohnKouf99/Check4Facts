@@ -3,8 +3,9 @@ import argparse
 
 import yaml
 
+from check4facts.scripts.search import CustomSearchEngine
+from check4facts.scripts.harvest import Harvester
 from check4facts.config import DirConf
-from check4facts.search import CustomSearchEngine
 
 
 class Interface:
@@ -24,11 +25,20 @@ class Interface:
         self.search_parser = self.subparsers.add_parser(
             'search', help='triggers relevant article search')
 
+        # create parser for "harvest" command
+        self.harvest_parser = self.subparsers.add_parser(
+            'harvest', help='triggers search results harvest')
+
     def run(self):
         # arguments for "search" command
         self.search_parser.add_argument(
             '--settings', type=str, default='search_config.yml',
             help='name of YAML configuration file containing search params')
+
+        # arguments for "harvest" command
+        self.harvest_parser.add_argument(
+            '--settings', type=str, default='harvest_config.yml',
+            help='name of YAML configuration file containing harvest params')
 
         cmd_args = self.parser.parse_args()
 
@@ -39,6 +49,14 @@ class Interface:
 
             cse = CustomSearchEngine(**params)
             cse.run()
+
+        elif cmd_args.action == 'harvest' and cmd_args.settings:
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.settings)
+            with open(path, 'r') as f:
+                params = yaml.safe_load(f)
+
+            harvester = Harvester(**params)
+            harvester.run()
 
 
 if __name__ == "__main__":

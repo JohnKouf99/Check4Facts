@@ -53,7 +53,7 @@ class CustomSearchEngine:
                 # there is also extra metadata available outside ['items'] key
                 results += self.service.cse().list(**params).execute()['items']
                 start += self.api_specific_params['num']
-            except KeyError:
+            except KeyError:  # TODO Add more exception controls e.g. no network, max limit reached
                 break
         return pd.DataFrame(results)
 
@@ -61,7 +61,9 @@ class CustomSearchEngine:
         if not os.path.exists(DirConf.SEARCH_RESULTS_DIR):
             os.mkdir(DirConf.SEARCH_RESULTS_DIR)
 
-        for row in self.statements_df.head(20).itertuples():
+        # TODO For now utilize head/tail to select statements manually
+        for row in self.statements_df.head(10).itertuples():
+            # TODO replace with named columns instead of numbers
             statement_id, statement_text = row[1], row[2]
             print('Search text:', statement_text)
 
@@ -73,5 +75,5 @@ class CustomSearchEngine:
 
             out = os.path.join(
                 DirConf.SEARCH_RESULTS_DIR, '{}.csv'.format(statement_id))
-            results_df.to_csv(out, index=False)
+            results_df.reset_index().to_csv(out, index=False)
         return

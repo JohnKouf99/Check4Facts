@@ -10,6 +10,9 @@ google-api-python-client = "*"
 pyyaml = "*"
 pandas = "*"
 numpy = "*"
+requests = "*"
+beautifulsoup4 = "*"
+tika = "*"
 
 [requires]
 python_version = "3.7"

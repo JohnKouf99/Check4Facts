@@ -1,0 +1,20 @@
+basic:
+  dir_name: 'search_results'  # Name of directory containing the .csv files
+html:
+  parser: 'html.parser'
+  blacklist:
+#    - 'meta'
+#    - 'head'
+    - 'input'
+    - 'button'
+    - 'a'
+#    - 'link'
+    - 'time'
+#    - 'noscript'
+#    - 'script'
+#    - 'style'
+    - 'template'
+    - 'form'
+    - 'select'
+    - 'header'
+    - 'footer'

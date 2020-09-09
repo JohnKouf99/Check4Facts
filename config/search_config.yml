@@ -1,6 +1,6 @@
 basic:
   filename: 'statements.csv'
-  total_num: 30  # For now, use only multiples of 'num' param
+  total_num: 20  # For now, use only multiples of 'num' param
 api_specific:
   cx: 'Custom-search-engine-ID'
   lr: 'lang_el'
