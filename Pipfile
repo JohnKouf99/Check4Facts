@@ -13,6 +13,8 @@ numpy = "*"
 requests = "*"
 beautifulsoup4 = "*"
 tika = "*"
+flask = "*"
+flask-restful = "*"
 
 [requires]
 python_version = "3.7"
