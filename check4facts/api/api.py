@@ -1,11 +1,8 @@
-import json
-
 from flask_cors import CORS
-from flask import Flask, request
 from flask_marshmallow import Marshmallow
 
-from check4facts.init import create_app
-from check4facts.models.models import db, Statement, Resource, StatementSource
+from check4facts.api.init import create_app
+from check4facts.models.models import Statement
 
 app = create_app()
 ma = Marshmallow(app)
@@ -23,17 +20,20 @@ class StatementSourcesSchema(ma.Schema):
         fields = ("id", "snippet", "title", "url")
 
 
+class TopicSchema(ma.Schema):
+    class Meta:
+        fields = ("id", "name")
+
+
 class StatementSchema(ma.Schema):
     class Meta:
-        fields = ("author", "id", "mainArticleText", "mainArticleUrl", "registrationDate", "resources", "statementDate",
-                  "statementSources", "subTopics", "text", "topic")
+        fields = ("author", "id", "main_article_text", "main_article_url", "registration_date", "statement_date", "text"
+                  , "topic")
 
-    statementSources = ma.Nested(StatementSourcesSchema)
-
-    resources = ma.Nested(ResourceSchema)
+    topic = ma.Nested(TopicSchema)
 
 
-statement_schema = StatementSchema()
+statement_schema = StatementSchema(many=True)
 resources_schema = ResourceSchema(many=True)
 
 
@@ -82,11 +82,12 @@ def search_harvest():
         }
     ])
 
-
+# Successfully returns the list of all statements in database.
 @app.route('/statement')
 def fetch_statements():
     statements = Statement.query.all()
-    return json.dump(statements)
+    result = statement_schema.dump(statements)
+    return {"statements": result}
 
 
 if __name__ == '__main__':
