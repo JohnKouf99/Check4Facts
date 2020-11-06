@@ -14,7 +14,10 @@ requests = "*"
 beautifulsoup4 = "*"
 tika = "*"
 flask = "*"
-flask-restful = "*"
+flask-cors = "*"
+flask-marshmallow = "*"
+flask-sqlalchemy = "*"
+sqlalchemy = "*"
 
 [requires]
 python_version = "3.7"
