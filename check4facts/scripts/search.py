@@ -1,79 +1,58 @@
 import os
 import string
+import time
 
 import pandas as pd
+import googleapiclient.errors
 from googleapiclient.discovery import build
 
 from check4facts.config import DirConf
 
 
-class CustomSearchEngine:
-
+class SearchEngine:
     def __init__(self, **kwargs):
         self.basic_params = kwargs['basic']
         self.api_specific_params = kwargs['api_specific']
         self.standard_query_params = kwargs['standard_query']
-
-        self.statements_df_ = None
-        self.service_ = None
-
-    @property
-    def statements_df(self):
-        if self.statements_df_ is None:
-            path = os.path.join(
-                DirConf.DATA_DIR, self.basic_params['filename'])
-            self.statements_df_ = pd.read_csv(path)
-            self.statements_df_['Text'] = \
-                self.statements_df_['Text'].map(self.preprocess)
-        return self.statements_df_
-
-    @property
-    def service(self):
-        if self.service_ is None:
-            self.service_ = build(
-                'customsearch', 'v1',
-                developerKey=self.standard_query_params['api_key'])
-        return self.service_
+        self.service = build(
+            'customsearch', 'v1',
+            developerKey=self.standard_query_params['api_key'])
 
     @staticmethod
-    def preprocess(text):
+    def text_preprocess(text):
         # Punctuation removal
-        translator = str.maketrans('', '', string.punctuation)
-        text = text.translate(translator)
+        text = text.translate(str.maketrans('', '', string.punctuation))
         return text
 
-    def search(self, text):
+    def google_search(self, search_text):
         params = self.api_specific_params
-        params['q'] = text
-
-        results, start = [], 1
-        while start - 1 < self.basic_params['total_num']:
+        params['q'], params['start'] = search_text, 1
+        search_results = []
+        while params['start'] - 1 < self.basic_params['total_num']:
             try:
-                params['start'] = start
-                # there is also extra metadata available outside ['items'] key
-                results += self.service.cse().list(**params).execute()['items']
-                start += self.api_specific_params['num']
-            except KeyError:  # TODO Add more exception controls e.g. no network, max limit reached
+                response = self.service.cse().list(**params).execute()
+                search_results += response['items']
+                next_page = response['queries']['nextPage'][0]
+                params['start'] = next_page['startIndex']
+            except KeyError:
                 break
-        return pd.DataFrame(results)
+            except googleapiclient.errors.HttpError as e:
+                print(type(e), '::', e)
+                time.sleep(60 * 60 * 24)
+        result = pd.DataFrame(search_results).reset_index()
+        return result
 
-    def run(self):
+    def run(self, claims):
+        return [self.google_search(self.text_preprocess(c)) for c in claims]
+
+    def run_dev(self):
         if not os.path.exists(DirConf.SEARCH_RESULTS_DIR):
             os.mkdir(DirConf.SEARCH_RESULTS_DIR)
-
-        # TODO For now utilize head/tail to select statements manually
-        for row in self.statements_df.head(10).itertuples():
-            # TODO replace with named columns instead of numbers
-            statement_id, statement_text = row[1], row[2]
-            print('Search text:', statement_text)
-
-            results_df = self.search(statement_text)
-            print('Search results:', len(results_df))
-
-            results_df['statement_id'] = statement_id
-            results_df['statement_text'] = statement_text
-
-            out = os.path.join(
-                DirConf.SEARCH_RESULTS_DIR, '{}.csv'.format(statement_id))
-            results_df.reset_index().to_csv(out, index=False)
-        return
+        path = os.path.join(DirConf.DATA_DIR, self.basic_params['filename'])
+        claims_df = pd.read_csv(path).head(10)
+        for c_id, c_text in zip(claims_df['Fact id'], claims_df['Text']):
+            result = self.run([c_text])[0]
+            print(f'Claim id {c_id}: Found {len(result)} search results.')
+            # result['claim_id'], result['claim_text'] = c_id, c_text
+            out = os.path.join(DirConf.SEARCH_RESULTS_DIR, f'{c_id}.csv')
+            result.to_csv(out, index=False)

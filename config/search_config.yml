@@ -1,9 +1,9 @@
 basic:
-  filename: 'statements.csv'
-  total_num: 20  # For now, use only multiples of 'num' param
+  filename: 'claims.csv'  # Applies only for 'search_dev' action
+  total_num: 20  # Total results to get, use only multiples of 'num' param
 api_specific:
-  cx: 'Custom-search-engine-ID'
+  cx: 'SECRET_ENGINE_ID'
   lr: 'lang_el'
-  num: 10  # This can't be greater than 10
+  num: 10  # max 10 results can be obtained in 1 query/page
 standard_query:
-  api_key: 'Secret-API-key'
+  api_key: 'SECRET_API_KEY'
