@@ -1,20 +1,9 @@
 basic:
-  dir_name: 'search_results'  # Name of directory containing the .csv files
+  filename: 'claims.csv'  # Applies only for 'harvest_dev' action
+  dir_name: 'search_results'  # Applies only for 'harvest_dev' action
 html:
   parser: 'html.parser'
-  blacklist:
-#    - 'meta'
-#    - 'head'
-    - 'input'
-    - 'button'
-    - 'a'
-#    - 'link'
-    - 'time'
-#    - 'noscript'
-#    - 'script'
-#    - 'style'
-    - 'template'
-    - 'form'
-    - 'select'
-    - 'header'
-    - 'footer'
+  blacklist: ['input', 'button', 'time', 'template',
+              'form', 'select', 'footer']
+similarity:
+  metric: 'bow'  # Choose between 'bow' and 'emb'

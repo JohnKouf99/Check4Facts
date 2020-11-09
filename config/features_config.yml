@@ -1,0 +1,22 @@
+basic:
+  dir_name: 'harvest_results'
+  model: 'el_core_news_lg'
+  lexicon: 'greek_sentiment_lexicon.tsv'
+  field_size_limit: 10000000
+  included_feats: ['embedding', 'similarity', 'subjectivity',
+                   'subjectivity_c', 'sentiment', 'sentiment_c', 'emotion']
+  included_res_parts: ['title', 'body', 'sim_par', 'sim_sent']
+embeddings: null
+similarity:
+  components: null
+subjectivity:
+  prefixes: ['Subjectivity']
+  scores: {'N/A': 0.5, 'OBJ': 0.0, 'SUBJ-': 0.5, 'SUBJ+': 1.0}
+  thr: {'OBJ': 0.5, 'SUBJ': 0.5}
+sentiment:
+  prefixes: ['Polarity']
+  scores: {'N/A': 0.5, 'NEG': 0.0, 'BOTH': 0.5, 'POS': 1.0}
+  thr: {'NEG': 0.5, 'POS': 0.5}
+emotion:
+  prefixes: ['Anger', 'Disgust', 'Fear', 'Happiness', 'Sadness', 'Surprise']
+  scores: {'N/A': 0.0, 1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}
