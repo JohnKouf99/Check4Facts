@@ -39,13 +39,13 @@ class Interface:
         self.harvest_parser = self.subparsers.add_parser(
             'harvest', help='triggers search results harvest')
 
+        # create parser for "features_dev" command
+        self.features_dev_parser = self.subparsers.add_parser(
+            'features_dev', help='triggers features extraction (dev)')
+
         # create parser for "search_harvest" command
         self.search_harvest_parser = self.subparsers.add_parser(
             'search_harvest', help='triggers search and harvest actions')
-
-        # create parser for "features" command
-        self.features_parser = self.subparsers.add_parser(
-            'features', help='triggers features extraction')
 
     def run(self):
         # arguments for "search_dev" command
@@ -68,6 +68,11 @@ class Interface:
             '--settings', type=str, default='harvest_config.yml',
             help='name of YAML configuration file containing harvest params')
 
+        # arguments for "features_dev" command
+        self.features_dev_parser.add_argument(
+            '--settings', type=str, default='features_config.yml',
+            help='name of YAML configuration file containing features params')
+
         # arguments for "search_harvest" command
         self.search_harvest_parser.add_argument(
             '--search_settings', type=str, default='search_config.yml',
@@ -75,11 +80,6 @@ class Interface:
         self.search_harvest_parser.add_argument(
             '--harvest_settings', type=str, default='harvest_config.yml',
             help='name of YAML configuration file containing harvest params')
-
-        # arguments for "features" command
-        self.features_parser.add_argument(
-            '--settings', type=str, default='features_config.yml',
-            help='name of YAML configuration file containing features params')
 
         cmd_args = self.parser.parse_args()
 
@@ -110,13 +110,21 @@ class Interface:
             with open(path, 'r') as f:
                 params = yaml.safe_load(f)
             h = Harvester(**params)
-            # NOTE: Filter out non-html articles before passing them to h.run()
             data = {'index': [0], 'link': ['https://www.liberal.gr/eidiseis/']}
-            articles = [{
-                'c_id': '98j34r',
+            claim_dicts = [{
+                'c_id': '98j4r',
                 'c_text': 'Τι χρήματα παίρνουν οι αιτούντες άσυλο',
-                'articles': pd.DataFrame(data)}]
-            results = h.run(articles)
+                'c_articles': pd.DataFrame(data)}]
+            results = h.run(claim_dicts)
+
+        elif cmd_args.action == 'features_dev' and cmd_args.settings:
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.settings)
+            with open(path, 'r') as f:
+                params = yaml.safe_load(f)
+            fe = FeaturesExtractor(**params)
+            fe.run_dev()
+
+        # TODO add features command support
 
         elif cmd_args.action == 'search_harvest' \
                 and cmd_args.search_settings and cmd_args.harvest_settings:
@@ -126,22 +134,15 @@ class Interface:
             se = SearchEngine(**search_params)
             claims = ['Τι χρήματα παίρνουν οι αιτούντες άσυλο']
             search_results = se.run(claims)
+
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.harvest_settings)
             with open(path, 'r') as f:
                 harvest_params = yaml.safe_load(f)
             h = Harvester(**harvest_params)
-            articles = [{
-                'c_id': '98j34r',
-                'c_text': claims[0],
-                'articles': search_results[0]}]
-            harvest_results = h.run(articles)
-
-        elif cmd_args.action == 'features' and cmd_args.settings:
-            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.settings)
-            with open(path, 'r') as f:
-                params = yaml.safe_load(f)
-            fe = FeaturesExtractor(**params)
-            fe.run()
+            claim_dicts = [{
+                'c_id': '98j4r', 'c_text': claims[0],
+                'c_articles': search_results[0]}]
+            harvest_results = h.run(claim_dicts)
 
 
 if __name__ == "__main__":

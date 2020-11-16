@@ -1,6 +1,7 @@
 import os
 import glob
 import string
+import time
 
 import numpy as np
 import pandas as pd
@@ -50,19 +51,27 @@ class Harvester:
         return
 
     def harvest_article(self, c_id, c_text, a_idx, a_url, save=False):
+        print(f"c_id: {c_id}, a_idx: {a_idx}")
+        t0 = time.time()
         try:
-            response = requests.get(a_url)
+            response = requests.get(a_url, timeout=self.html_params['timeout'])
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
             if save: self.save_content_to_xml(
                 f'{type(e)} :: {e}', f'{c_id}_{a_idx}.xml')
-            return None, None, None, None
+            result = {'title': None, 'body': None,
+                      'sim_par': None, 'sim_sent': None}
+            return result
 
+        t1 = time.time()
         soup = BeautifulSoup(response.content, self.html_params['parser'])
+        t2 = time.time()
         if save: self.save_content_to_xml(
             soup.prettify(), f'{c_id}_{a_idx}.xml')
+        t3 = time.time()
         for element in soup(self.html_params['blacklist']):
             element.extract()
+        t4 = time.time()
 
         title = soup.title.text.strip() if soup.title else None
         all_lines = []
@@ -74,34 +83,52 @@ class Harvester:
                              if len(line.split()) > 10]
                     all_lines += lines
         body = '\n'.join(all_lines) if all_lines else None
+        t5 = time.time()
         if body:
             paragraphs = body.splitlines()
             sim_par = self.most_similar(paragraphs, c_text)
+            # TODO Replace below with sent_tokenize on each paragraph
+            #  instead of joining paragraphs first. In order to decide,
+            #  check the quality of results
             sentences = sent_tokenize(' '.join(paragraphs))
             sim_sent = self.most_similar(sentences, c_text)
         else:
             sim_par, sim_sent = None, None
-        return title, body, sim_par, sim_sent
+        t6 = time.time()
+        result = {'title': title, 'body': body,
+                  'sim_par': sim_par, 'sim_sent': sim_sent}
+        print(f"Response: {t1-t0:.2f}, "
+              f"Soup: {t2-t1:.2f}, "
+              f"Save: {t3-t2:.2f}, "
+              f"Tag filtering: {t4-t3:.2f}, "
+              f"Title-Body: {t5-t4:.2f}, "
+              f"Similarities: {t6-t5:.2f}")
+        return result
+
+    @staticmethod
+    def filter_file_type(df, type_):
+        if 'fileFormat' not in df: df['fileFormat'] = 'html'
+        df['fileFormat'] = df['fileFormat'].fillna('html')
+        df = df[df['fileFormat'] == type_]
+        return df
 
     def harvest_articles(self, d, save=False):
-        data = []
-        if not d['articles'].empty:
-            # TODO use all articles per claim
-            a_idxs, a_urls = d['articles']['index'].head(10), d['articles']['link'].head(10)
-            for a_idx, a_url in zip(a_idxs, a_urls):
-                title, body, sim_par, sim_sent = self.harvest_article(
-                    d['c_id'], d['c_text'], a_idx, a_url, save)
-                data.append({
-                    'index': a_idx, 'url': a_url, 'title': title,
-                    'body': body, 'sim_par': sim_par, 'sim_sent': sim_sent})
+        c_id, c_text, c_articles = d['c_id'], d['c_text'], d['c_articles']
+        c_articles = self.filter_file_type(c_articles, 'html')
+        a_idxs = c_articles['index'] if not c_articles.empty else []
+        a_urls = c_articles['link'] if not c_articles.empty else []
+        data = [{**{'index': a_idx, 'url': a_url},
+                 **self.harvest_article(c_id, c_text, a_idx, a_url, save)}
+                for a_idx, a_url in zip(a_idxs, a_urls)]
         result = pd.DataFrame(data)
         if result.empty: result = result.reset_index()
         return result
 
-    def run(self, articles, save=False):
-        return [self.harvest_articles(d, save) for d in articles]
+    def run(self, claim_dicts, save=False):
+        return [self.harvest_articles(d, save) for d in claim_dicts]
 
     def run_dev(self):
+        start_time = time.time()
         if not os.path.exists(DirConf.HARVEST_RESULTS_DIR):
             os.mkdir(DirConf.HARVEST_RESULTS_DIR)
         if not os.path.exists(DirConf.HARVEST_XML_DIR):
@@ -111,15 +138,17 @@ class Harvester:
         path = os.path.join(DirConf.DATA_DIR, self.basic_params['dir_name'])
         csv_files = glob.glob(os.path.join(path, '*.csv'))
         for csv_file in csv_files:
+            t0 = time.time()
             c_id = os.path.basename(csv_file).split('.')[0]
             c_text = claims_df.loc[
                 claims_df['Fact id'] == int(c_id), 'Text'].iloc[0]
             df = pd.read_csv(csv_file)
-            if 'fileFormat' not in df: df['fileFormat'] = 'html'
-            df['fileFormat'] = df['fileFormat'].fillna('html')
-            df = df[df['fileFormat'] == 'html']
-            articles = {'c_id': c_id, 'c_text': c_text, 'articles': df}
-            result = self.run([articles], save=True)[0]
-            print(f'Claim id {c_id}: Harvested {len(result)} articles.')
+            claim_dict = {'c_id': c_id, 'c_text': c_text, 'c_articles': df}
+            result = self.run([claim_dict], save=True)[0]
+            t1 = time.time()
+            print(f'Claim id {c_id}: Harvested {len(result)} articles '
+                  f'in {t1-t0:.2f} secs.')
             out = os.path.join(DirConf.HARVEST_RESULTS_DIR, f'{c_id}.csv')
             result.to_csv(out, index=False)
+        stop_time = time.time()
+        print(f'Harvest done in {stop_time-start_time:.2f} secs.')

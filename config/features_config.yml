@@ -1,11 +1,12 @@
 basic:
-  dir_name: 'harvest_results'
+  filename: 'claims.csv'  # Applies only for 'features_dev' action
+  dir_name: 'harvest_results'  # Applies only for 'features_dev' action
   model: 'el_core_news_lg'
   lexicon: 'greek_sentiment_lexicon.tsv'
-  field_size_limit: 10000000
+#  field_size_limit: 10000000
   included_feats: ['embedding', 'similarity', 'subjectivity',
                    'subjectivity_c', 'sentiment', 'sentiment_c', 'emotion']
-  included_res_parts: ['title', 'body', 'sim_par', 'sim_sent']
+  included_article_parts: ['title', 'body', 'sim_par', 'sim_sent']
 embeddings: null
 similarity:
   components: null

@@ -2,6 +2,7 @@ basic:
   filename: 'claims.csv'  # Applies only for 'harvest_dev' action
   dir_name: 'search_results'  # Applies only for 'harvest_dev' action
 html:
+  timeout: 5.0
   parser: 'html.parser'
   blacklist: ['input', 'button', 'time', 'template',
               'form', 'select', 'footer']

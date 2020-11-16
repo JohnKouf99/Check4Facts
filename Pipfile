@@ -23,6 +23,8 @@ flask-marshmallow = "*"
 flask-sqlalchemy = "*"
 sqlalchemy = "*"
 psycopg2 = "*"
+psycopg2-binary = "*"
+install = "*"
 
 [requires]
 python_version = "3.7"

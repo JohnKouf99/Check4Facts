@@ -46,13 +46,18 @@ class SearchEngine:
         return [self.google_search(self.text_preprocess(c)) for c in claims]
 
     def run_dev(self):
+        start_time = time.time()
         if not os.path.exists(DirConf.SEARCH_RESULTS_DIR):
             os.mkdir(DirConf.SEARCH_RESULTS_DIR)
         path = os.path.join(DirConf.DATA_DIR, self.basic_params['filename'])
         claims_df = pd.read_csv(path).head(10)
         for c_id, c_text in zip(claims_df['Fact id'], claims_df['Text']):
+            t0 = time.time()
             result = self.run([c_text])[0]
-            print(f'Claim id {c_id}: Found {len(result)} search results.')
-            # result['claim_id'], result['claim_text'] = c_id, c_text
+            t1 = time.time()
+            print(f'Claim id {c_id}: Found {len(result)} search results '
+                  f'in {t1-t0:.2f} secs.')
             out = os.path.join(DirConf.SEARCH_RESULTS_DIR, f'{c_id}.csv')
             result.to_csv(out, index=False)
+        stop_time = time.time()
+        print(f'Search done in {stop_time-start_time:.2f} secs.')

@@ -1,7 +1,7 @@
 import os
 import glob
 import string
-import csv
+import time
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,6 @@ class FeaturesExtractor:
 
         self.nlp = spacy.load(self.basic_params['model'])
         self.lexicon_ = None
-        csv.field_size_limit(self.basic_params['field_size_limit'])
 
     @property
     def lexicon(self):
@@ -144,53 +143,56 @@ class FeaturesExtractor:
             feats['emotion'] = self.get_emotion(annots)  # TODO decide map value for N/A
         return feats
 
-    def get_resource_features(self, title, body, sim_par, sim_sent, claim):
+    def get_article_features(self, title, body, sim_par, sim_sent, claim):
         feats = {}
 
-        if 'title' in self.basic_params['included_res_parts']:
+        if 'title' in self.basic_params['included_article_parts']:
             feats['title'] = self.get_sentence_features(title, claim)
-        if 'body' in self.basic_params['included_res_parts']:
-            pars_feats = [self.get_sentence_features(par, claim) for par in body.split('\n')]
+        if 'body' in self.basic_params['included_article_parts']:
+            pars_feats = [self.get_sentence_features(par, claim)
+                          for par in body.splitlines()]
             feats['body'] = self.aggregate_features(pars_feats)
-        if 'sim_par' in self.basic_params['included_res_parts']:
+        if 'sim_par' in self.basic_params['included_article_parts']:
             feats['sim_par'] = self.get_sentence_features(sim_par, claim)
-        if 'sim_sent' in self.basic_params['included_res_parts']:
+        if 'sim_sent' in self.basic_params['included_article_parts']:
             feats['sim_sent'] = self.get_sentence_features(sim_sent, claim)
         return feats
 
-    def get_claim_features(self, claim, input_file):
-        feats = {'claim': None, 'resources': None}
-
-        with open(input_file, newline='') as input_csv:
-            reader = csv.DictReader(input_csv)
-            res_feats = [self.get_resource_features(
-                row['title'], row['body'], row['similar_paragraph'],
-                row['similar_sentence'], row['claim_text']) for row in reader
-                if row['title'] != '' and row['body'] != '']
-
-        feats['claim'] = self.get_sentence_features(claim, claim)
-        if res_feats:
-            feats['resources'] = {res_part: self.aggregate_features(
-                [d[res_part] for d in res_feats]) for res_part in
-                self.basic_params['included_res_parts']}
+    def get_claim_features(self, d):
+        c_text, c_articles = d['c_text'], d['c_articles'].dropna()
+        feats = {'claim': self.get_sentence_features(c_text, c_text),
+                 'articles': None}
+        articles_feats = [self.get_article_features(
+            row.title, row.body, row.sim_par, row.sim_sent, c_text)
+            for row in c_articles.itertuples()]
+        if articles_feats:
+            feats['articles'] = {article_part: self.aggregate_features(
+                [d[article_part] for d in articles_feats]) for article_part in
+                self.basic_params['included_article_parts']}
         return feats
 
-    def run(self):
+    def run(self, claim_dicts):
+        return [self.get_claim_features(d) for d in claim_dicts]
+
+    def run_dev(self):
+        start_time = time.time()
         if not os.path.exists(DirConf.FEATURES_RESULTS_DIR):
             os.mkdir(DirConf.FEATURES_RESULTS_DIR)
-
-        claims_df = pd.read_csv(os.path.join(DirConf.DATA_DIR, 'claims.csv'))
+        claims_df = pd.read_csv(os.path.join(
+            DirConf.DATA_DIR, self.basic_params['filename']))
         path = os.path.join(DirConf.DATA_DIR, self.basic_params['dir_name'])
-        files = glob.glob(os.path.join(path, '*.csv'))
-
-        for file in files[:5]:
-            print('Processing file:', file)
-            claim_id = int(os.path.basename(file).split('.')[0])
-            claim = claims_df.loc[claims_df['Fact id'] == claim_id, 'Text'].iloc[0]
-            claim_feats = self.get_claim_features(claim, file)
-            # print(claim_feats)
-
-        # for key, value in all_feats.items():
-        #     path = os.path.join(DirConf.FEATURES_RESULTS_DIR, key)
-        #     np.save(path, np.vstack(value))
-        return
+        csv_files = glob.glob(os.path.join(path, '*.csv'))
+        for csv_file in csv_files:
+            t0 = time.time()
+            c_id = os.path.basename(csv_file).split('.')[0]
+            c_text = claims_df.loc[
+                claims_df['Fact id'] == int(c_id), 'Text'].iloc[0]
+            df = pd.read_csv(csv_file)
+            claim_dict = {'c_id': c_id, 'c_text': c_text, 'c_articles': df}
+            result = self.run([claim_dict])[0]
+            t1 = time.time()
+            print(f'Claim id {c_id}: Features extracted in {t1-t0:.2f} secs.')
+            out = os.path.join(DirConf.FEATURES_RESULTS_DIR, f'{c_id}.csv')
+            pd.json_normalize(result).to_csv(out, index=False)
+        stop_time = time.time()
+        print(f'Features extraction done in {stop_time-start_time:.2f} secs.')
