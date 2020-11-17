@@ -1,12 +1,13 @@
 import os
 import yaml
+import datetime
 
 from flask import request
 from flask_cors import CORS
 from flask_marshmallow import Marshmallow
 
 from check4facts.api.init import create_app
-from check4facts.models.models import Statement
+from check4facts.models.models import db, Statement, Resource
 from check4facts.config import DirConf
 from check4facts.scripts.search import SearchEngine
 from check4facts.scripts.harvest import Harvester
@@ -68,20 +69,31 @@ def search_harvest():
     articles = [{
         'c_id': statement.get('id'),
         'c_text': statement.get('text'),
-        'articles': search_results}]
+        'c_articles': search_results}]
     # Using first element only for the result cause only one statement is being checked.
     harvest_results = h.run(articles)[0]
     response_result = []
-    for row in harvest_results.itertuples():
-        response_result.append({
-            'url': row.url,
-            'title': row.title,
-            'body': row.body,
-            'simParagraph': row.sim_par,
-            'simSentence': row.sim_sent,
-        })
 
-    # TODO save harvest results(Resources) to database.
+    # Get current time for harvest_date column.
+    now = datetime.datetime.utcnow()
+    for row in harvest_results.itertuples():
+        if row.title is not None:
+            response_result.append({
+                'url': row.url,
+                'title': row.title,
+                'body': row.body,
+                'simParagraph': row.sim_par,
+                'simSentence': row.sim_sent,
+            })
+            # Create a resource according to database model and insert it
+            resource = Resource(id=db.Sequence('sequence_generator').next_value(), url=row.url, harvest_iteration=1,
+                                title=row.title, sim_paragraph=row.sim_par, sim_sentence=row.sim_sent,
+                                file_format='NONE', statement_id=statement.get('id'), body=row.body, harvest_date=now)
+            db.session.add(resource)
+    # After all resources are inserted commit to database (Check for potential overflow of memory)
+    db.session.commit()
+
+    # TODO move the above code for database storing to harvest.run()
     return resources_schema.jsonify(response_result)
 
 
