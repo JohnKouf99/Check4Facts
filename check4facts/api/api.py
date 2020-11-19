@@ -86,7 +86,7 @@ def search_harvest():
                 'simSentence': row.sim_sent,
             })
             # Create a resource according to database model and insert it
-            resource = Resource(id=db.Sequence('sequence_generator').next_value(), url=row.url, harvest_iteration=1,
+            resource = Resource(id=db.Sequence('resource_sequence_generator').next_value(), url=row.url, harvest_iteration=1,
                                 title=row.title, sim_paragraph=row.sim_par, sim_sentence=row.sim_sent,
                                 file_format='NONE', statement_id=statement.get('id'), body=row.body, harvest_date=now)
             db.session.add(resource)
