@@ -124,7 +124,8 @@ class FeaturesExtractor:
 
     def get_sentence_features(self, sent, claim):
         sent_doc = self.nlp(self.text_preprocess(sent)[:self.nlp.max_length])
-        annots = [self.lexicon[self.lexicon['Lemma'] == t.lemma_] for t in sent_doc]
+        annots = [self.lexicon[self.lexicon['Lemma'] == t.lemma_]
+                  for t in sent_doc]
         feats = {}
 
         if 'embedding' in self.basic_params['included_feats']:
@@ -152,10 +153,10 @@ class FeaturesExtractor:
             pars_feats = [self.get_sentence_features(par, claim)
                           for par in body.splitlines()]
             feats['body'] = self.aggregate_features(pars_feats)
-        if 'sim_par' in self.basic_params['included_article_parts']:
-            feats['sim_par'] = self.get_sentence_features(sim_par, claim)
-        if 'sim_sent' in self.basic_params['included_article_parts']:
-            feats['sim_sent'] = self.get_sentence_features(sim_sent, claim)
+        if 'sim_paragraph' in self.basic_params['included_article_parts']:
+            feats['sim_paragraph'] = self.get_sentence_features(sim_par, claim)
+        if 'sim_sentence' in self.basic_params['included_article_parts']:
+            feats['sim_sentence'] = self.get_sentence_features(sim_sent, claim)
         return feats
 
     def get_claim_features(self, d):
@@ -163,13 +164,14 @@ class FeaturesExtractor:
         feats = {'claim': self.get_sentence_features(c_text, c_text),
                  'articles': None}
         articles_feats = [self.get_article_features(
-            row.title, row.body, row.sim_par, row.sim_sent, c_text)
+            row.title, row.body, row.sim_paragraph, row.sim_sentence, c_text)
             for row in c_articles.itertuples()]
         if articles_feats:
             feats['articles'] = {article_part: self.aggregate_features(
                 [d[article_part] for d in articles_feats]) for article_part in
                 self.basic_params['included_article_parts']}
-        return feats
+        result = pd.json_normalize(feats)
+        return result
 
     def run(self, claim_dicts):
         return [self.get_claim_features(d) for d in claim_dicts]
@@ -193,6 +195,6 @@ class FeaturesExtractor:
             t1 = time.time()
             print(f'Claim id {c_id}: Features extracted in {t1-t0:.2f} secs.')
             out = os.path.join(DirConf.FEATURES_RESULTS_DIR, f'{c_id}.csv')
-            pd.json_normalize(result).to_csv(out, index=False)
+            result.to_csv(out, index=False)
         stop_time = time.time()
         print(f'Features extraction done in {stop_time-start_time:.2f} secs.')

@@ -10,6 +10,7 @@ from check4facts.config import DirConf
 
 
 class SearchEngine:
+
     def __init__(self, **kwargs):
         self.basic_params = kwargs['basic']
         self.api_specific_params = kwargs['api_specific']
@@ -42,8 +43,9 @@ class SearchEngine:
         result = pd.DataFrame(search_results).reset_index()
         return result
 
-    def run(self, claims):
-        return [self.google_search(self.text_preprocess(c)) for c in claims]
+    def run(self, claim_texts):
+        return [self.google_search(self.text_preprocess(t))
+                for t in claim_texts]
 
     def run_dev(self):
         start_time = time.time()

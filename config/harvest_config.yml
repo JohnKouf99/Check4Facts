@@ -1,6 +1,7 @@
 basic:
   filename: 'claims.csv'  # Applies only for 'harvest_dev' action
   dir_name: 'search_results'  # Applies only for 'harvest_dev' action
+  article_format: 'html'
 html:
   timeout: 5.0
   parser: 'html.parser'

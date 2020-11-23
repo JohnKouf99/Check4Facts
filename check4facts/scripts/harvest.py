@@ -1,6 +1,7 @@
 import os
 import glob
 import string
+import datetime
 import time
 
 import numpy as np
@@ -51,8 +52,6 @@ class Harvester:
         return
 
     def harvest_article(self, c_id, c_text, a_idx, a_url, save=False):
-        print(f"c_id: {c_id}, a_idx: {a_idx}")
-        t0 = time.time()
         try:
             response = requests.get(a_url, timeout=self.html_params['timeout'])
             response.raise_for_status()
@@ -60,18 +59,14 @@ class Harvester:
             if save: self.save_content_to_xml(
                 f'{type(e)} :: {e}', f'{c_id}_{a_idx}.xml')
             result = {'title': None, 'body': None,
-                      'sim_par': None, 'sim_sent': None}
+                      'sim_paragraph': None, 'sim_sentence': None}
             return result
 
-        t1 = time.time()
         soup = BeautifulSoup(response.content, self.html_params['parser'])
-        t2 = time.time()
         if save: self.save_content_to_xml(
             soup.prettify(), f'{c_id}_{a_idx}.xml')
-        t3 = time.time()
         for element in soup(self.html_params['blacklist']):
             element.extract()
-        t4 = time.time()
 
         title = soup.title.text.strip() if soup.title else None
         all_lines = []
@@ -83,7 +78,6 @@ class Harvester:
                              if len(line.split()) > 10]
                     all_lines += lines
         body = '\n'.join(all_lines) if all_lines else None
-        t5 = time.time()
         if body:
             paragraphs = body.splitlines()
             sim_par = self.most_similar(paragraphs, c_text)
@@ -94,30 +88,26 @@ class Harvester:
             sim_sent = self.most_similar(sentences, c_text)
         else:
             sim_par, sim_sent = None, None
-        t6 = time.time()
         result = {'title': title, 'body': body,
-                  'sim_par': sim_par, 'sim_sent': sim_sent}
-        print(f"Response: {t1-t0:.2f}, "
-              f"Soup: {t2-t1:.2f}, "
-              f"Save: {t3-t2:.2f}, "
-              f"Tag filtering: {t4-t3:.2f}, "
-              f"Title-Body: {t5-t4:.2f}, "
-              f"Similarities: {t6-t5:.2f}")
+                  'sim_paragraph': sim_par, 'sim_sentence': sim_sent}
         return result
 
     @staticmethod
-    def filter_file_type(df, type_):
+    def filter_article_format(df, format_):
         if 'fileFormat' not in df: df['fileFormat'] = 'html'
         df['fileFormat'] = df['fileFormat'].fillna('html')
-        df = df[df['fileFormat'] == type_]
+        df = df[df['fileFormat'] == format_]
         return df
 
     def harvest_articles(self, d, save=False):
         c_id, c_text, c_articles = d['c_id'], d['c_text'], d['c_articles']
-        c_articles = self.filter_file_type(c_articles, 'html')
+        c_articles = self.filter_article_format(
+            c_articles, self.basic_params['article_format'])
         a_idxs = c_articles['index'] if not c_articles.empty else []
         a_urls = c_articles['link'] if not c_articles.empty else []
-        data = [{**{'index': a_idx, 'url': a_url},
+        now = datetime.datetime.utcnow()
+        data = [{**{'index': a_idx, 'url': a_url, 'harvest_date': now,
+                    'file_format': self.basic_params['article_format']},
                  **self.harvest_article(c_id, c_text, a_idx, a_url, save)}
                 for a_idx, a_url in zip(a_idxs, a_urls)]
         result = pd.DataFrame(data)
