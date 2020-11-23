@@ -3,13 +3,11 @@ basic:
   dir_name: 'harvest_results'  # Applies only for 'features_dev' action
   model: 'el_core_news_lg'
   lexicon: 'greek_sentiment_lexicon.tsv'
-#  field_size_limit: 10000000
   included_feats: ['embedding', 'similarity', 'subjectivity',
                    'subjectivity_c', 'sentiment', 'sentiment_c', 'emotion']
-  included_article_parts: ['title', 'body', 'sim_par', 'sim_sent']
+  included_article_parts: ['title', 'body', 'sim_paragraph', 'sim_sentence']
 embeddings: null
-similarity:
-  components: null
+similarity: null
 subjectivity:
   prefixes: ['Subjectivity']
   scores: {'N/A': 0.5, 'OBJ': 0.0, 'SUBJ-': 0.5, 'SUBJ+': 1.0}
