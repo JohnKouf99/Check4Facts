@@ -16,6 +16,7 @@ from check4facts.scripts.search import SearchEngine
 from check4facts.scripts.harvest import Harvester
 
 app = create_app()
+app.app_context().push()
 ma = Marshmallow(app)
 CORS(app)
 
@@ -52,7 +53,7 @@ resources_schema = ResourceSchema(many=True)
 def search_harvest():
     statement = request.json
 
-    search_harvest_task(statement)
+    search_harvest_task(app, db, statement)
 
     return jsonify({'started': True})
 
