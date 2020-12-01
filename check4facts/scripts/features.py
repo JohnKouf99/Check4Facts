@@ -74,7 +74,7 @@ class FeaturesExtractor:
         scores = [np.mean(a[cols].values) if not a.empty else 0.5 for a in annots]
         obj_tokens = sum(s < self.subj_params['thr']['OBJ'] for s in scores)
         subj_tokens = sum(s > self.subj_params['thr']['SUBJ'] for s in scores)
-        return obj_tokens, subj_tokens
+        return [obj_tokens, subj_tokens]
 
     def get_sentiment(self, annots):
         cols = [col for col in self.lexicon if col.startswith('polarity')]
@@ -86,14 +86,14 @@ class FeaturesExtractor:
         scores = [np.mean(a[cols].values) if not a.empty else 0.5 for a in annots]
         neg_tokens = sum(s < self.sent_params['thr']['NEG'] for s in scores)
         pos_tokens = sum(s > self.sent_params['thr']['POS'] for s in scores)
-        return neg_tokens, pos_tokens
+        return [neg_tokens, pos_tokens]
 
     def get_emotion(self, annots):
         emotions = {}
         for emotion in self.emo_params['prefixes']:
             cols = [col for col in self.lexicon if col.startswith(emotion)]
             scores = [np.mean(a[cols].values) if not a.empty else 0.0 for a in annots]
-            emotions[emotion] = np.min(scores), np.mean(scores), np.max(scores)
+            emotions[emotion] = [np.min(scores), np.mean(scores), np.max(scores)]
         return emotions
 
     def aggregate_features(self, feats_list):
@@ -110,13 +110,13 @@ class FeaturesExtractor:
             aggr_feats['subjectivity'] = np.mean(feats, axis=0)
         if 'subjectivity_counts' in self.basic_params['included_feats']:
             feats = [d['subjectivity_counts'] for d in feats_list]
-            aggr_feats['subjectivity_counts'] = tuple(np.mean(feats, axis=0))
+            aggr_feats['subjectivity_counts'] = list(np.mean(feats, axis=0))
         if 'sentiment' in self.basic_params['included_feats']:
             feats = [d['sentiment'] for d in feats_list]
             aggr_feats['sentiment'] = np.mean(feats, axis=0)
         if 'sentiment_counts' in self.basic_params['included_feats']:
             feats = [d['sentiment_counts'] for d in feats_list]
-            aggr_feats['sentiment_counts'] = tuple(np.mean(feats, axis=0))
+            aggr_feats['sentiment_counts'] = list(np.mean(feats, axis=0))
         if 'emotion' in self.basic_params['included_feats']:
             aggr_feats['emotion'] = {}
             for emotion in self.emo_params['prefixes']:
@@ -124,7 +124,7 @@ class FeaturesExtractor:
                 min_ = np.min(feats, axis=0)[0]
                 avg_ = np.mean(feats, axis=0)[1]
                 max_ = np.max(feats, axis=0)[2]
-                aggr_feats['emotion'][emotion] = min_, avg_, max_
+                aggr_feats['emotion'][emotion] = [min_, avg_, max_]
         return aggr_feats
 
     def get_sentence_features(self, sent, statement):

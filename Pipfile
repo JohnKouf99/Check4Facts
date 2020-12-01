@@ -25,6 +25,8 @@ sqlalchemy = "*"
 psycopg2 = "*"
 psycopg2-binary = "*"
 install = "*"
+uwsgi = "*"
+uwsgidecorators = "*"
 joblib = "*"
 
 [requires]

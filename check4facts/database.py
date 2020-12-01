@@ -1,4 +1,35 @@
+import pandas as pd
 import psycopg2
+import numpy as np
+from sqlalchemy import create_engine
+from psycopg2.extensions import register_adapter, AsIs
+
+
+def adapt_numpy_float64(numpy_float64):
+    return AsIs(numpy_float64)
+
+
+def adapt_numpy_int64(numpy_int64):
+    return AsIs(numpy_int64)
+
+
+def adapt_numpy_float32(numpy_float32):
+    return AsIs(numpy_float32)
+
+
+def adapt_numpy_int32(numpy_int32):
+    return AsIs(numpy_int32)
+
+
+def adapt_numpy_array(numpy_array):
+    return AsIs(list(numpy_array))
+
+
+register_adapter(np.float64, adapt_numpy_float64)
+register_adapter(np.int64, adapt_numpy_int64)
+register_adapter(np.float32, adapt_numpy_float32)
+register_adapter(np.int32, adapt_numpy_int32)
+register_adapter(np.ndarray, adapt_numpy_array)
 
 
 class DBHandler:
@@ -10,8 +41,8 @@ class DBHandler:
         conn = None
         sql1 = "SELECT MAX(resource.harvest_iteration) FROM resource" \
                " WHERE resource.statement_id = %s;"
-        sql2 = "INSERT INTO resource (url, title, body, sim_par," \
-               " sim_sent, file_format, harvest_date, harvest_iteration," \
+        sql2 = "INSERT INTO resource (url, title, body, sim_paragraph," \
+               " sim_sentence, file_format, harvest_date, harvest_iteration," \
                " statement_id) VALUES (%(url)s, %(title)s, %(body)s," \
                " %(sim_par)s, %(sim_sent)s, %(file_format)s," \
                " %(harvest_date)s, %(harvest_iteration)s, %(statement_id)s);"
@@ -32,11 +63,10 @@ class DBHandler:
         finally:
             if conn is not None: conn.close()
 
-    def insert_statement_features(self, s_id, features_record):
+    def insert_statement_features(self, s_id, features_record, predict_label):
         conn = None
         sql = "INSERT INTO feature_statement (" \
               " s_embedding," \
-              " s_similarity," \
               " s_subjectivity," \
               " s_subjectivity_counts," \
               " s_sentiment," \
@@ -74,7 +104,7 @@ class DBHandler:
               " r_sim_par_embedding," \
               " r_sim_par_similarity," \
               " r_sim_par_subjectivity," \
-              " r_sim_par_subjectivity_counts" \
+              " r_sim_par_subjectivity_counts," \
               " r_sim_par_sentiment," \
               " r_sim_par_sentiment_counts," \
               " r_sim_par_emotion_anger," \
@@ -86,7 +116,7 @@ class DBHandler:
               " r_sim_sent_embedding," \
               " r_sim_sent_similarity," \
               " r_sim_sent_subjectivity," \
-              " r_sim_sent_subjectivity_counts" \
+              " r_sim_sent_subjectivity_counts," \
               " r_sim_sent_sentiment," \
               " r_sim_sent_sentiment_counts," \
               " r_sim_sent_emotion_anger," \
@@ -95,10 +125,10 @@ class DBHandler:
               " r_sim_sent_emotion_happiness," \
               " r_sim_sent_emotion_sadness," \
               " r_sim_sent_emotion_surprise," \
-              " statement_id" \
+              " predict_label," \
+              " statement_id)" \
               " VALUES (" \
-              " %(s_embedding)s," \
-              " %(s_similarity)s," \
+              " array%(s_embedding)s," \
               " %(s_subjectivity)s," \
               " %(s_subjectivity_counts)s," \
               " %(s_sentiment)s," \
@@ -109,7 +139,7 @@ class DBHandler:
               " %(s_emotion_happiness)s," \
               " %(s_emotion_sadness)s," \
               " %(s_emotion_surprise)s," \
-              " %(r_title_embedding)s," \
+              " array%(r_title_embedding)s," \
               " %(r_title_similarity)s," \
               " %(r_title_subjectivity)s," \
               " %(r_title_subjectivity_counts)s," \
@@ -121,7 +151,7 @@ class DBHandler:
               " %(r_title_emotion_happiness)s," \
               " %(r_title_emotion_sadness)s," \
               " %(r_title_emotion_surprise)s," \
-              " %(r_body_embedding)s," \
+              " array%(r_body_embedding)s," \
               " %(r_body_similarity)s," \
               " %(r_body_subjectivity)s," \
               " %(r_body_subjectivity_counts)s," \
@@ -133,7 +163,7 @@ class DBHandler:
               " %(r_body_emotion_happiness)s," \
               " %(r_body_emotion_sadness)s," \
               " %(r_body_emotion_surprise)s," \
-              " %(r_sim_par_embedding)s," \
+              " array%(r_sim_par_embedding)s," \
               " %(r_sim_par_similarity)s," \
               " %(r_sim_par_subjectivity)s," \
               " %(r_sim_par_subjectivity_counts)s," \
@@ -145,7 +175,7 @@ class DBHandler:
               " %(r_sim_par_emotion_happiness)s," \
               " %(r_sim_par_emotion_sadness)s," \
               " %(r_sim_par_emotion_surprise)s," \
-              " %(r_sim_sent_embedding)s," \
+              " array%(r_sim_sent_embedding)s," \
               " %(r_sim_sent_similarity)s," \
               " %(r_sim_sent_subjectivity)s," \
               " %(r_sim_sent_subjectivity_counts)s," \
@@ -157,10 +187,12 @@ class DBHandler:
               " %(r_sim_sent_emotion_happiness)s," \
               " %(r_sim_sent_emotion_sadness)s," \
               " %(r_sim_sent_emotion_surprise)s," \
+              " %(predict_label)s," \
               " %(statement_id)s);"
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
+            features_record['predict_label'] = predict_label
             features_record['statement_id'] = s_id
             cur.execute(sql, features_record)
             conn.commit()

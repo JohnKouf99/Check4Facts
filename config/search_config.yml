@@ -1,5 +1,4 @@
 basic:
-  filename: 'claims.csv'  # Applies only for 'search_dev' action
   total_num: 20  # Total results to get, use only multiples of 'num' param
 api_specific:
   cx: 'SECRET_ENGINE_ID'
