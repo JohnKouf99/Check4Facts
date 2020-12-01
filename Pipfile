@@ -27,6 +27,7 @@ psycopg2-binary = "*"
 install = "*"
 uwsgi = "*"
 uwsgidecorators = "*"
+joblib = "*"
 
 [requires]
 python_version = "3.7"

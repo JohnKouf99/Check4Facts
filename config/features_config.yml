@@ -1,21 +1,20 @@
 basic:
-  filename: 'claims.csv'  # Applies only for 'features_dev' action
-  dir_name: 'harvest_results'  # Applies only for 'features_dev' action
   model: 'el_core_news_lg'
   lexicon: 'greek_sentiment_lexicon.tsv'
-  included_feats: ['embedding', 'similarity', 'subjectivity',
-                   'subjectivity_c', 'sentiment', 'sentiment_c', 'emotion']
-  included_article_parts: ['title', 'body', 'sim_paragraph', 'sim_sentence']
+  included_feats: [
+    'embedding', 'similarity', 'subjectivity', 'subjectivity_counts',
+    'sentiment', 'sentiment_counts', 'emotion']
+  included_resource_parts: ['title', 'body', 'sim_par', 'sim_sent']
 embeddings: null
 similarity: null
 subjectivity:
-  prefixes: ['Subjectivity']
+  prefixes: ['subjectivity']
   scores: {'N/A': 0.5, 'OBJ': 0.0, 'SUBJ-': 0.5, 'SUBJ+': 1.0}
   thr: {'OBJ': 0.5, 'SUBJ': 0.5}
 sentiment:
-  prefixes: ['Polarity']
+  prefixes: ['polarity']
   scores: {'N/A': 0.5, 'NEG': 0.0, 'BOTH': 0.5, 'POS': 1.0}
   thr: {'NEG': 0.5, 'POS': 0.5}
 emotion:
-  prefixes: ['Anger', 'Disgust', 'Fear', 'Happiness', 'Sadness', 'Surprise']
+  prefixes: ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise']
   scores: {'N/A': 0.0, 1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}

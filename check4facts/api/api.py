@@ -19,7 +19,7 @@ with open(path, 'r') as f:
     dbh = DBHandler(**db_params)
 
 
-@app.route('/search_harvest', methods=['POST'])
+@app.route('/analyze', methods=['POST'])
 def analyze():
     statement = request.json
 
