@@ -1,5 +1,4 @@
 from flask import Flask
-from check4facts.models.models import db, Statement, Resource, StatementSource
 
 """
 This is responsible for creating the API layer app for our python module Check4Facts
@@ -8,8 +7,8 @@ This is responsible for creating the API layer app for our python module Check4F
 
 def create_app():
     flask_app = Flask(__name__)
-    flask_app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://check4facts@localhost:5432/check4facts'
-    flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(flask_app)
+    # flask_app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://check4facts@localhost:5432/check4facts'
+    # flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # db.init_app(flask_app)
 
     return flask_app

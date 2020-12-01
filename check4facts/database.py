@@ -1,4 +1,35 @@
+import pandas
 import psycopg2
+import numpy as np
+from sqlalchemy import create_engine
+from psycopg2.extensions import register_adapter, AsIs
+
+
+def adapt_numpy_float64(numpy_float64):
+    return AsIs(numpy_float64)
+
+
+def adapt_numpy_int64(numpy_int64):
+    return AsIs(numpy_int64)
+
+
+def adapt_numpy_float32(numpy_float32):
+    return AsIs(numpy_float32)
+
+
+def adapt_numpy_int32(numpy_int32):
+    return AsIs(numpy_int32)
+
+
+def adapt_numpy_array(numpy_array):
+    return AsIs(list(numpy_array))
+
+
+register_adapter(np.float64, adapt_numpy_float64)
+register_adapter(np.int64, adapt_numpy_int64)
+register_adapter(np.float32, adapt_numpy_float32)
+register_adapter(np.int32, adapt_numpy_int32)
+register_adapter(np.ndarray, adapt_numpy_array)
 
 
 class DBHandler:
@@ -33,88 +64,90 @@ class DBHandler:
             if conn is not None: conn.close()
 
     def insert_claim_features(self, c_id, features_record):
+        # engine = create_engine('postgresql://check4facts@localhost:5432/check4facts')
+        # features_record.to_sql('feature_statement', engine, if_exists='append', index=False)
         conn = None
-        sql = "INSERT INTO feature_statement (c_embedding, c_similarity," \
-              " c_subjectivity, c_subjectivity_c, c_sentiment," \
-              " c_sentiment_c, c_emotion_anger, c_emotion_disgust," \
-              " c_emotion_fear, c_emotion_happiness, c_emotion_sadness," \
-              " c_emotion_surprise, a_title_embedding, a_title_similarity," \
-              " a_title_subjectivity, a_title_subjectivity_c," \
-              " a_title_sentiment, a_title_sentiment_c," \
-              " a_title_emotion_anger, a_title_emotion_disgust," \
-              " a_title_emotion_fear, a_title_emotion_happiness," \
-              " a_title_emotion_sadness, a_title_emotion_surprise," \
-              " a_body_embedding, a_body_similarity, a_body_subjectivity," \
-              " a_body_subjectivity_c, a_body_sentiment, a_body_sentiment_c," \
-              " a_body_emotion_anger, a_body_emotion_disgust," \
-              " a_body_emotion_fear, a_body_emotion_happiness," \
-              " a_body_emotion_sadness, a_body_emotion_surprise," \
-              " a_sim_paragraph_embedding, a_sim_paragraph_similarity," \
-              " a_sim_paragraph_subjectivity, a_sim_paragraph_subjectivity_c" \
-              " a_sim_paragraph_sentiment, a_sim_paragraph_sentiment_c," \
-              " a_sim_paragraph_emotion_anger," \
-              " a_sim_paragraph_emotion_disgust," \
-              " a_sim_paragraph_emotion_fear," \
-              " a_sim_paragraph_emotion_happiness," \
-              " a_sim_paragraph_emotion_sadness," \
-              " a_sim_paragraph_emotion_surprise," \
-              " a_sim_sentence_embedding, a_sim_sentence_similarity," \
-              " a_sim_sentence_subjectivity, a_sim_sentence_subjectivity_c" \
-              " a_sim_sentence_sentiment, a_sim_sentence_sentiment_c," \
-              " a_sim_sentence_emotion_anger," \
-              " a_sim_sentence_emotion_disgust," \
-              " a_sim_sentence_emotion_fear," \
-              " a_sim_sentence_emotion_happiness," \
-              " a_sim_sentence_emotion_sadness," \
-              " a_sim_sentence_emotion_surprise, statement_id" \
-              " VALUES (%(claim.embedding)s, %(claim.similarity)s," \
+        sql = "INSERT INTO feature_statement (s_embedding," \
+              " s_subjectivity, s_subjectivity_counts, s_sentiment," \
+              " s_sentiment_counts, s_emotion_anger, s_emotion_disgust," \
+              " s_emotion_fear, s_emotion_happiness, s_emotion_sadness," \
+              " s_emotion_surprise, r_title_embedding, r_title_similarity," \
+              " r_title_subjectivity, r_title_subjectivity_counts," \
+              " r_title_sentiment, r_title_sentiment_counts," \
+              " r_title_emotion_anger, r_title_emotion_disgust," \
+              " r_title_emotion_fear, r_title_emotion_happiness," \
+              " r_title_emotion_sadness, r_title_emotion_surprise," \
+              " r_body_embedding, r_body_similarity, r_body_subjectivity," \
+              " r_body_subjectivity_counts, r_body_sentiment, r_body_sentiment_counts," \
+              " r_body_emotion_anger, r_body_emotion_disgust," \
+              " r_body_emotion_fear, r_body_emotion_happiness," \
+              " r_body_emotion_sadness, r_body_emotion_surprise," \
+              " r_sim_par_embedding, r_sim_par_similarity," \
+              " r_sim_par_subjectivity, r_sim_par_subjectivity_counts," \
+              " r_sim_par_sentiment, r_sim_par_sentiment_counts," \
+              " r_sim_par_emotion_anger," \
+              " r_sim_par_emotion_disgust," \
+              " r_sim_par_emotion_fear," \
+              " r_sim_par_emotion_happiness," \
+              " r_sim_par_emotion_sadness," \
+              " r_sim_par_emotion_surprise," \
+              " r_sim_sent_embedding, r_sim_sent_similarity," \
+              " r_sim_sent_subjectivity, r_sim_sent_subjectivity_counts," \
+              " r_sim_sent_sentiment, r_sim_sent_sentiment_counts," \
+              " r_sim_sent_emotion_anger," \
+              " r_sim_sent_emotion_disgust," \
+              " r_sim_sent_emotion_fear," \
+              " r_sim_sent_emotion_happiness," \
+              " r_sim_sent_emotion_sadness," \
+              " r_sim_sent_emotion_surprise, statement_id)" \
+              " VALUES (array%(claim.embedding)s," \
               " %(claim.subjectivity)s, %(claim.subjectivity_c)s," \
               " %(claim.sentiment)s, %(claim.sentiment_c)s," \
               " %(claim.emotion.Anger)s, %(claim.emotion.Disgust)s," \
               " %(claim.emotion.Fear)s, %(claim.emotion.Happiness)s," \
               " %(claim.emotion.Sadness)s, %(claim.emotion.Surprise)s," \
-              " %(articles.title.embedding)s," \
+              " array%(articles.title.embedding)s," \
               " %(articles.title.similarity)s," \
               " %(articles.title.subjectivity)s," \
-              " %(articles.title.subjectivity_c)s," \
+              " array%(articles.title.subjectivity_c)s," \
               " %(articles.title.sentiment)s," \
-              " %(articles.title.sentiment_c)s," \
+              " array%(articles.title.sentiment_c)s," \
               " %(articles.title.emotion.Anger)s," \
               " %(articles.title.emotion.Disgust)s," \
               " %(articles.title.emotion.Fear)s," \
               " %(articles.title.emotion.Happiness)s," \
               " %(articles.title.emotion.Sadness)s," \
               " %(articles.title.emotion.Surprise)s," \
-              " %(articles.body.embedding)s," \
+              " array%(articles.body.embedding)s," \
               " %(articles.body.similarity)s," \
               " %(articles.body.subjectivity)s," \
-              " %(articles.body.subjectivity_c)s," \
+              " array%(articles.body.subjectivity_c)s," \
               " %(articles.body.sentiment)s," \
-              " %(articles.body.sentiment_c)s," \
+              " array%(articles.body.sentiment_c)s," \
               " %(articles.body.emotion.Anger)s," \
               " %(articles.body.emotion.Disgust)s," \
               " %(articles.body.emotion.Fear)s," \
               " %(articles.body.emotion.Happiness)s," \
               " %(articles.body.emotion.Sadness)s," \
               " %(articles.body.emotion.Surprise)s," \
-              " %(articles.sim_paragraph.embedding)s," \
+              " array%(articles.sim_paragraph.embedding)s," \
               " %(articles.sim_paragraph.similarity)s," \
               " %(articles.sim_paragraph.subjectivity)s," \
-              " %(articles.sim_paragraph.subjectivity_c)s," \
+              " array%(articles.sim_paragraph.subjectivity_c)s," \
               " %(articles.sim_paragraph.sentiment)s," \
-              " %(articles.sim_paragraph.sentiment_c)s," \
+              " array%(articles.sim_paragraph.sentiment_c)s," \
               " %(articles.sim_paragraph.emotion.Anger)s," \
               " %(articles.sim_paragraph.emotion.Disgust)s," \
               " %(articles.sim_paragraph.emotion.Fear)s," \
               " %(articles.sim_paragraph.emotion.Happiness)s," \
               " %(articles.sim_paragraph.emotion.Sadness)s," \
               " %(articles.sim_paragraph.emotion.Surprise)s," \
-              " %(articles.sim_sentence.embedding)s," \
+              " array%(articles.sim_sentence.embedding)s," \
               " %(articles.sim_sentence.similarity)s," \
               " %(articles.sim_sentence.subjectivity)s," \
-              " %(articles.sim_sentence.subjectivity_c)s," \
+              " array%(articles.sim_sentence.subjectivity_c)s," \
               " %(articles.sim_sentence.sentiment)s," \
-              " %(articles.sim_sentence.sentiment_c)s," \
+              " array%(articles.sim_sentence.sentiment_c)s," \
               " %(articles.sim_sentence.emotion.Anger)s," \
               " %(articles.sim_sentence.emotion.Disgust)s," \
               " %(articles.sim_sentence.emotion.Fear)s," \
