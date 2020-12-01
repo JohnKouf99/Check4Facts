@@ -43,23 +43,22 @@ class SearchEngine:
         result = pd.DataFrame(search_results).reset_index()
         return result
 
-    def run(self, claim_texts):
+    def run(self, statement_texts):
         return [self.google_search(self.text_preprocess(t))
-                for t in claim_texts]
+                for t in statement_texts]
 
     def run_dev(self):
         start_time = time.time()
         if not os.path.exists(DirConf.SEARCH_RESULTS_DIR):
             os.mkdir(DirConf.SEARCH_RESULTS_DIR)
-        path = os.path.join(DirConf.DATA_DIR, self.basic_params['filename'])
-        claims_df = pd.read_csv(path).head(10)
-        for c_id, c_text in zip(claims_df['Fact id'], claims_df['Text']):
+        statement_df = pd.read_csv(DirConf.CSV_FILE)
+        for s_id, s_text in zip(statement_df['Fact id'], statement_df['Text']):
             t0 = time.time()
-            result = self.run([c_text])[0]
+            result = self.run([s_text])[0]
             t1 = time.time()
-            print(f'Claim id {c_id}: Found {len(result)} search results '
+            print(f'Statement id {s_id}: Found {len(result)} search results '
                   f'in {t1-t0:.2f} secs.')
-            out = os.path.join(DirConf.SEARCH_RESULTS_DIR, f'{c_id}.csv')
+            out = os.path.join(DirConf.SEARCH_RESULTS_DIR, f'{s_id}.csv')
             result.to_csv(out, index=False)
         stop_time = time.time()
         print(f'Search done in {stop_time-start_time:.2f} secs.')
