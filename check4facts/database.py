@@ -124,6 +124,7 @@ class DBHandler:
               " r_sim_sent_emotion_sadness," \
               " r_sim_sent_emotion_surprise," \
               " predict_label," \
+              " predict_proba," \
               " statement_id)" \
               " VALUES (" \
               " array%(s_embedding)s," \
@@ -191,7 +192,7 @@ class DBHandler:
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
-            features_record['predict_label'] = np.argmax(s_preds)
+            features_record['predict_label'] = True if np.argmax(s_preds) == 1 else False
             features_record['predict_proba'] = np.max(s_preds)
             features_record['statement_id'] = s_id
             cur.execute(sql, features_record)
@@ -212,7 +213,6 @@ class DBHandler:
             cur.execute(sql)
             res = cur.fetchall()
             conn.commit()
-            cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:

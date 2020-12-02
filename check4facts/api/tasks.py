@@ -6,7 +6,7 @@ from check4facts.predict import Predictor
 from check4facts.scripts.features import FeaturesExtractor
 from check4facts.scripts.harvest import Harvester
 from check4facts.scripts.search import SearchEngine
-
+from check4facts.train import Trainer
 
 @thread
 def analyze_task(statement, dbh):
@@ -47,11 +47,23 @@ def analyze_task(statement, dbh):
         predict_params = yaml.safe_load(f)
     p = Predictor(**predict_params)
     predict_result = p.run([features_results])[0]
-    predict_label = True if predict_result == '1' else False
 
     resource_records = harvest_results.to_dict('records')
     dbh.insert_statement_resources(statement_id, resource_records)
     print(f'Finished storing harvest results for statement id: "{statement_id}"')
     # features_record = features_results.to_dict('records')[0]
-    dbh.insert_statement_features(statement_id, features_results, predict_label)
+    dbh.insert_statement_features(statement_id, features_results, predict_result)
     print(f'Finished storing features results for statement id: "{statement_id}"')
+
+
+@thread
+def train_task(dbh):
+    path = os.path.join(DirConf.CONFIG_DIR, 'train_config.yml')
+    with open(path, 'r') as f:
+        train_params = yaml.safe_load(f)
+    t = Trainer(**train_params)
+
+    df = dbh.fetch_statement_features(t.features)
+
+    print(df.shape)
+    print(df.columns)

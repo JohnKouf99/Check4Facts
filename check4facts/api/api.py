@@ -6,7 +6,7 @@ from flask_cors import CORS
 
 
 from check4facts.api.init import create_app
-from check4facts.api.tasks import analyze_task
+from check4facts.api.tasks import analyze_task, train_task
 from check4facts.config import DirConf
 from check4facts.database import DBHandler
 
@@ -16,7 +16,7 @@ CORS(app)
 path = os.path.join(DirConf.CONFIG_DIR, 'db_config.yml')  # while using uwsgi
 with open(path, 'r') as f:
     db_params = yaml.safe_load(f)
-    dbh = DBHandler(**db_params)
+dbh = DBHandler(**db_params)
 
 
 @app.route('/analyze', methods=['POST'])
@@ -26,6 +26,14 @@ def analyze():
     analyze_task(statement, dbh)
 
     return jsonify({'started': True})
+
+
+@app.route('/train', methods=['GET'])
+def train():
+
+    train_task(dbh)
+
+    return jsonify({'get': True})
 
 
 if __name__ == '__main__':
