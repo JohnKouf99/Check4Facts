@@ -240,23 +240,25 @@ class Interface:
                 for i in range(len(statement_texts))]
             features_results = fe.run(statement_dicts)
 
+            # TODO manage features_results items referring to statements
+            #  with no resources. We discard those statements but we have to
+            #  keep items aligned.
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.predict_settings)
             with open(path, 'r') as f:
                 predict_params = yaml.safe_load(f)
             p = Predictor(**predict_params)
             predict_results = p.run(features_results)
 
-            # TODO review necessary queries
-            # path = os.path.join(DirConf.CONFIG_DIR, cmd_args.db_settings)
-            # with open(path, 'r') as f:
-            #     db_params = yaml.safe_load(f)
-            # dbh = DBHandler(**db_params)
-            # for s_id, s_resources, s_features in \
-            #         zip(statement_ids, harvest_results, features_results):
-            #     resource_records = s_resources.to_dict('records')
-            #     dbh.insert_statement_resources(s_id, resource_records)
-            #     features_record = s_features
-            #     dbh.insert_statement_features(s_id, features_record)
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.db_settings)
+            with open(path, 'r') as f:
+                db_params = yaml.safe_load(f)
+            dbh = DBHandler(**db_params)
+            for s_id, s_resources, s_features, s_preds in \
+                    zip(statement_ids, harvest_results,
+                        features_results, predict_results):
+                resource_records = s_resources.to_dict('records')
+                dbh.insert_statement_resources(s_id, resource_records)
+                dbh.insert_statement_features(s_id, s_features, s_preds)
 
         # TODO complete train_task_demo
         elif cmd_args.action == 'train_task_demo' \

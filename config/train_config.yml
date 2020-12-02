@@ -10,7 +10,6 @@ save:
   suffix: '.joblib'
 features: [
   's_embedding',
-#  's_similarity',  # Redundant
   's_subjectivity',
   's_subjectivity_counts',
   's_sentiment',

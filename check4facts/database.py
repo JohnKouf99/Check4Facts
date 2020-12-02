@@ -1,7 +1,5 @@
-import pandas as pd
-import psycopg2
 import numpy as np
-from sqlalchemy import create_engine
+import psycopg2
 from psycopg2.extensions import register_adapter, AsIs
 
 
@@ -63,7 +61,7 @@ class DBHandler:
         finally:
             if conn is not None: conn.close()
 
-    def insert_statement_features(self, s_id, features_record, predict_label):
+    def insert_statement_features(self, s_id, features_record, s_preds):
         conn = None
         sql = "INSERT INTO feature_statement (" \
               " s_embedding," \
@@ -188,11 +186,13 @@ class DBHandler:
               " %(r_sim_sent_emotion_sadness)s," \
               " %(r_sim_sent_emotion_surprise)s," \
               " %(predict_label)s," \
+              " %(predict_proba)s," \
               " %(statement_id)s);"
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
-            features_record['predict_label'] = predict_label
+            features_record['predict_label'] = np.argmax(s_preds)
+            features_record['predict_proba'] = np.max(s_preds)
             features_record['statement_id'] = s_id
             cur.execute(sql, features_record)
             conn.commit()

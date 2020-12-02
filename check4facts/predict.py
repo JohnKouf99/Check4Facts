@@ -12,7 +12,6 @@ class Predictor:
 
     def __init__(self, **kwargs):
         self.model_params = kwargs['model']
-        self.output_params = kwargs['output']
         self.features = kwargs['features']
         self.model = self.get_model()
 
@@ -34,8 +33,7 @@ class Predictor:
         x = self.prepare_data(features_list)
         # TODO we lost here the alignment after removing statements with no
         #  resources. Check why there is a 'TRUE' pred label in dev results.
-        return self.model.predict_proba(x) if self.output_params[
-            'proba'] else self.model.predict(x)
+        return self.model.predict_proba(x)
 
     def run_dev(self):
         start_time = time.time()
@@ -47,6 +45,6 @@ class Predictor:
             for s_id in statement_df['Fact id']]
         result = self.run(features_list)
         path = os.path.join(DirConf.PREDICTOR_RESULTS_DIR, 'results.csv')
-        # pd.DataFrame(result).to_csv(path, index=True)
+        pd.DataFrame(result).to_csv(path, index=False)
         stop_time = time.time()
         print(f'Model prediction done in {stop_time-start_time:.2f} secs.')

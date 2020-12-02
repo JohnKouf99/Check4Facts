@@ -36,16 +36,13 @@ class Trainer:
         features_df = pd.DataFrame([pd.read_json(os.path.join(
             DirConf.FEATURES_RESULTS_DIR, f'{s_id}.json'), typ='series')
             for s_id in statement_df['Fact id']], columns=self.features)
-        print(features_df.shape)
         mask = (features_df.isna().any(axis=1)) | (
-                    statement_df['Verdict'] == 'UNKNOWN')
-        print(mask)
+                statement_df['Verdict'] == 'UNKNOWN')
         x = np.vstack(features_df[~mask].apply(np.hstack, axis=1))
         # TODO investigate why (eg check null values for s_id=1 in
         #  artciles.body.emotion.anger). For now just set nones to 0.0
         x[x == None] = 0.0
         y = statement_df['Verdict'][~mask]
-        print(x.shape, y.shape)
         self.run(x, y)
         fname = self.save_params['prefix'] + time.strftime(
             self.save_params['datetime']) + self.save_params['suffix']

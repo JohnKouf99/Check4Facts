@@ -15,9 +15,6 @@ class SklearnBaseModel:
         self.model = self.model.fit(x, y)
         return self.model
 
-    def predict(self, x):
-        return self.model.predict(x)
-
     def predict_proba(self, x):
         return self.model.predict_proba(x)
 

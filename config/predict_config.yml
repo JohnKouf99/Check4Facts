@@ -1,11 +1,8 @@
 model:
   name: 'RF'
-  path: 'data/trainer_results/rf_dev_2020-11-30-14:18.joblib'
-output:
-  proba: False  # NOTE: if this is True then 'run_dev()' will fail
+  path: 'data/trainer_results/rf_dev_2020-12-02-12:42.joblib'
 features: [
   's_embedding',
-#  's_similarity',  # Redundant
   's_subjectivity',
   's_subjectivity_counts',
   's_sentiment',
