@@ -26,7 +26,7 @@ class Predictor:
         x = np.vstack(features_df[~mask].apply(np.hstack, axis=1))
         # TODO investigate why (eg check null values for s_id=1 in
         #  articles.body.emotion.anger). For now just set nones to 0.0
-        x[x == None] = 0.0
+        x = np.nan_to_num(x)
         return x
 
     def run(self, features_list):
