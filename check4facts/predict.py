@@ -22,17 +22,11 @@ class Predictor:
 
     def prepare_data(self, features_list):
         features_df = pd.DataFrame(features_list, columns=self.features)
-        mask = features_df.isna().any(axis=1)
-        x = np.vstack(features_df[~mask].apply(np.hstack, axis=1))
-        # TODO investigate why (eg check null values for s_id=1 in
-        #  articles.body.emotion.anger). For now just set nones to 0.0
-        x = np.nan_to_num(x)
+        x = np.vstack(features_df.apply(np.hstack, axis=1))
         return x
 
     def run(self, features_list):
         x = self.prepare_data(features_list)
-        # TODO we lost here the alignment after removing statements with no
-        #  resources. Check why there is a 'TRUE' pred label in dev results.
         return self.model.predict_proba(x)
 
     def run_dev(self):

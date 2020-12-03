@@ -209,13 +209,12 @@ class Interface:
                 and cmd_args.search_settings and cmd_args.harvest_settings \
                 and cmd_args.features_settings and cmd_args.db_settings:
 
-            statement_ids = [2, 4, 5]
-            # statement_ids = [2, 4, 5, 7]
+            statement_ids = [4, 5, 7, 16]
             statement_texts = [
-                'Προσοχή, όμως. Το Μεταναστευτικό τώρα αποκτά μία νέα διάσταση, καθώς στις ροές προς την Ελλάδα περιλαμβάνονται άνθρωποι από το Ιράν -όπου είχαμε πολλά κρούσματα Κορωνοϊού- και πολλοί διερχόμενοι από το Αφγανιστάν. Τα νησιά μας, συνεπώς, τα οποία είναι, ήδη, επιβαρυμένα σε θέματα δημόσιας υγείας πρέπει να προστατευτούν διπλά. Να τα διασφαλίσουμε. Να το πω απλά, να κάνουμε ό,τι περνά από το χέρι μας για να αποφύγουμε την εμφάνιση του ιού -ειδικά εκεί.   ',
                 'Μετανάστες στον Έβρο: «Μας έβγαλαν από τη φυλακή και μας έστειλαν στα σύνορα». ',
-                'Έτοιμοι για «απόβαση» στη Λέσβο 150.000 μετανάστες και πρόσφυγες.'
-                # 'Το 80-85% είναι πλέον οικονομικοί μετανάστες.'
+                'Έτοιμοι για «απόβαση» στη Λέσβο 150.000 μετανάστες και πρόσφυγες.',
+                'Το 80-85% είναι πλέον οικονομικοί μετανάστες.',
+                'Πέτσας: η Σύνοδος των χωρών του Νότου (Med 7) είχε προγραμματιστεί για τις 2 Ιουλίου στην Κορσική'
             ]
 
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.search_settings)
@@ -235,6 +234,11 @@ class Interface:
                 for i in range(len(statement_texts))]
             harvest_results = h.run(statement_dicts)
 
+            # TODO manage harvest_results items referring to statements
+            #  with no resources. We discard those statements but we have to
+            #  keep items aligned. Prediction and db storing are not
+            #  supporting those statements.
+
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.features_settings)
             with open(path, 'r') as f:
                 features_params = yaml.safe_load(f)
@@ -246,9 +250,6 @@ class Interface:
                 for i in range(len(statement_texts))]
             features_results = fe.run(statement_dicts)
 
-            # TODO manage features_results items referring to statements
-            #  with no resources. We discard those statements but we have to
-            #  keep items aligned.
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.predict_settings)
             with open(path, 'r') as f:
                 predict_params = yaml.safe_load(f)
@@ -280,10 +281,8 @@ class Interface:
 
             features_records = dbh.fetch_statement_features(
                 train_params['features'])
-            features = np.vstack([np.hstack(fr) for fr in features_records])
+            features = np.vstack([np.hstack(f) for f in features_records])
             labels = dbh.fetch_statement_labels()
-            # TODO investigate why there are no none values here like
-            #  those in run_dev
             t.run(features, labels)
 
             if not os.path.exists(DirConf.MODELS_DIR):

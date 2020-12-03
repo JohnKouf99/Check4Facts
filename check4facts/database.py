@@ -133,63 +133,63 @@ class DBHandler:
                " VALUES (" \
                " array%(s_embedding)s," \
                " %(s_subjectivity)s," \
-               " %(s_subjectivity_counts)s," \
+               " array%(s_subjectivity_counts)s," \
                " %(s_sentiment)s," \
-               " %(s_sentiment_counts)s," \
-               " %(s_emotion_anger)s," \
-               " %(s_emotion_disgust)s," \
-               " %(s_emotion_fear)s," \
-               " %(s_emotion_happiness)s," \
-               " %(s_emotion_sadness)s," \
-               " %(s_emotion_surprise)s," \
+               " array%(s_sentiment_counts)s," \
+               " array%(s_emotion_anger)s," \
+               " array%(s_emotion_disgust)s," \
+               " array%(s_emotion_fear)s," \
+               " array%(s_emotion_happiness)s," \
+               " array%(s_emotion_sadness)s," \
+               " array%(s_emotion_surprise)s," \
                " array%(r_title_embedding)s," \
                " %(r_title_similarity)s," \
                " %(r_title_subjectivity)s," \
-               " %(r_title_subjectivity_counts)s," \
+               " array%(r_title_subjectivity_counts)s," \
                " %(r_title_sentiment)s," \
-               " %(r_title_sentiment_counts)s," \
-               " %(r_title_emotion_anger)s," \
-               " %(r_title_emotion_disgust)s," \
-               " %(r_title_emotion_fear)s," \
-               " %(r_title_emotion_happiness)s," \
-               " %(r_title_emotion_sadness)s," \
-               " %(r_title_emotion_surprise)s," \
+               " array%(r_title_sentiment_counts)s," \
+               " array%(r_title_emotion_anger)s," \
+               " array%(r_title_emotion_disgust)s," \
+               " array%(r_title_emotion_fear)s," \
+               " array%(r_title_emotion_happiness)s," \
+               " array%(r_title_emotion_sadness)s," \
+               " array%(r_title_emotion_surprise)s," \
                " array%(r_body_embedding)s," \
                " %(r_body_similarity)s," \
                " %(r_body_subjectivity)s," \
-               " %(r_body_subjectivity_counts)s," \
+               " array%(r_body_subjectivity_counts)s," \
                " %(r_body_sentiment)s," \
-               " %(r_body_sentiment_counts)s," \
-               " %(r_body_emotion_anger)s," \
-               " %(r_body_emotion_disgust)s," \
-               " %(r_body_emotion_fear)s," \
-               " %(r_body_emotion_happiness)s," \
-               " %(r_body_emotion_sadness)s," \
-               " %(r_body_emotion_surprise)s," \
+               " array%(r_body_sentiment_counts)s," \
+               " array%(r_body_emotion_anger)s," \
+               " array%(r_body_emotion_disgust)s," \
+               " array%(r_body_emotion_fear)s," \
+               " array%(r_body_emotion_happiness)s," \
+               " array%(r_body_emotion_sadness)s," \
+               " array%(r_body_emotion_surprise)s," \
                " array%(r_sim_par_embedding)s," \
                " %(r_sim_par_similarity)s," \
                " %(r_sim_par_subjectivity)s," \
-               " %(r_sim_par_subjectivity_counts)s," \
+               " array%(r_sim_par_subjectivity_counts)s," \
                " %(r_sim_par_sentiment)s," \
-               " %(r_sim_par_sentiment_counts)s," \
-               " %(r_sim_par_emotion_anger)s," \
-               " %(r_sim_par_emotion_disgust)s," \
-               " %(r_sim_par_emotion_fear)s," \
-               " %(r_sim_par_emotion_happiness)s," \
-               " %(r_sim_par_emotion_sadness)s," \
-               " %(r_sim_par_emotion_surprise)s," \
+               " array%(r_sim_par_sentiment_counts)s," \
+               " array%(r_sim_par_emotion_anger)s," \
+               " array%(r_sim_par_emotion_disgust)s," \
+               " array%(r_sim_par_emotion_fear)s," \
+               " array%(r_sim_par_emotion_happiness)s," \
+               " array%(r_sim_par_emotion_sadness)s," \
+               " array%(r_sim_par_emotion_surprise)s," \
                " array%(r_sim_sent_embedding)s," \
                " %(r_sim_sent_similarity)s," \
                " %(r_sim_sent_subjectivity)s," \
-               " %(r_sim_sent_subjectivity_counts)s," \
+               " array%(r_sim_sent_subjectivity_counts)s," \
                " %(r_sim_sent_sentiment)s," \
-               " %(r_sim_sent_sentiment_counts)s," \
-               " %(r_sim_sent_emotion_anger)s," \
-               " %(r_sim_sent_emotion_disgust)s," \
-               " %(r_sim_sent_emotion_fear)s," \
-               " %(r_sim_sent_emotion_happiness)s," \
-               " %(r_sim_sent_emotion_sadness)s," \
-               " %(r_sim_sent_emotion_surprise)s," \
+               " array%(r_sim_sent_sentiment_counts)s," \
+               " array%(r_sim_sent_emotion_anger)s," \
+               " array%(r_sim_sent_emotion_disgust)s," \
+               " array%(r_sim_sent_emotion_fear)s," \
+               " array%(r_sim_sent_emotion_happiness)s," \
+               " array%(r_sim_sent_emotion_sadness)s," \
+               " array%(r_sim_sent_emotion_surprise)s," \
                " %(predict_label)s," \
                " %(predict_proba)s," \
                " %(harvest_iteration)s," \
