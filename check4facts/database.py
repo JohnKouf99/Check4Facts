@@ -63,140 +63,149 @@ class DBHandler:
 
     def insert_statement_features(self, s_id, features_record, s_preds):
         conn = None
-        sql = "INSERT INTO feature_statement (" \
-              " s_embedding," \
-              " s_subjectivity," \
-              " s_subjectivity_counts," \
-              " s_sentiment," \
-              " s_sentiment_counts," \
-              " s_emotion_anger," \
-              " s_emotion_disgust," \
-              " s_emotion_fear," \
-              " s_emotion_happiness," \
-              " s_emotion_sadness," \
-              " s_emotion_surprise," \
-              " r_title_embedding," \
-              " r_title_similarity," \
-              " r_title_subjectivity," \
-              " r_title_subjectivity_counts," \
-              " r_title_sentiment," \
-              " r_title_sentiment_counts," \
-              " r_title_emotion_anger," \
-              " r_title_emotion_disgust," \
-              " r_title_emotion_fear," \
-              " r_title_emotion_happiness," \
-              " r_title_emotion_sadness," \
-              " r_title_emotion_surprise," \
-              " r_body_embedding," \
-              " r_body_similarity," \
-              " r_body_subjectivity," \
-              " r_body_subjectivity_counts," \
-              " r_body_sentiment," \
-              " r_body_sentiment_counts," \
-              " r_body_emotion_anger," \
-              " r_body_emotion_disgust," \
-              " r_body_emotion_fear," \
-              " r_body_emotion_happiness," \
-              " r_body_emotion_sadness," \
-              " r_body_emotion_surprise," \
-              " r_sim_par_embedding," \
-              " r_sim_par_similarity," \
-              " r_sim_par_subjectivity," \
-              " r_sim_par_subjectivity_counts," \
-              " r_sim_par_sentiment," \
-              " r_sim_par_sentiment_counts," \
-              " r_sim_par_emotion_anger," \
-              " r_sim_par_emotion_disgust," \
-              " r_sim_par_emotion_fear," \
-              " r_sim_par_emotion_happiness," \
-              " r_sim_par_emotion_sadness," \
-              " r_sim_par_emotion_surprise," \
-              " r_sim_sent_embedding," \
-              " r_sim_sent_similarity," \
-              " r_sim_sent_subjectivity," \
-              " r_sim_sent_subjectivity_counts," \
-              " r_sim_sent_sentiment," \
-              " r_sim_sent_sentiment_counts," \
-              " r_sim_sent_emotion_anger," \
-              " r_sim_sent_emotion_disgust," \
-              " r_sim_sent_emotion_fear," \
-              " r_sim_sent_emotion_happiness," \
-              " r_sim_sent_emotion_sadness," \
-              " r_sim_sent_emotion_surprise," \
-              " predict_label," \
-              " predict_proba," \
-              " statement_id)" \
-              " VALUES (" \
-              " array%(s_embedding)s," \
-              " %(s_subjectivity)s," \
-              " %(s_subjectivity_counts)s," \
-              " %(s_sentiment)s," \
-              " %(s_sentiment_counts)s," \
-              " %(s_emotion_anger)s," \
-              " %(s_emotion_disgust)s," \
-              " %(s_emotion_fear)s," \
-              " %(s_emotion_happiness)s," \
-              " %(s_emotion_sadness)s," \
-              " %(s_emotion_surprise)s," \
-              " array%(r_title_embedding)s," \
-              " %(r_title_similarity)s," \
-              " %(r_title_subjectivity)s," \
-              " %(r_title_subjectivity_counts)s," \
-              " %(r_title_sentiment)s," \
-              " %(r_title_sentiment_counts)s," \
-              " %(r_title_emotion_anger)s," \
-              " %(r_title_emotion_disgust)s," \
-              " %(r_title_emotion_fear)s," \
-              " %(r_title_emotion_happiness)s," \
-              " %(r_title_emotion_sadness)s," \
-              " %(r_title_emotion_surprise)s," \
-              " array%(r_body_embedding)s," \
-              " %(r_body_similarity)s," \
-              " %(r_body_subjectivity)s," \
-              " %(r_body_subjectivity_counts)s," \
-              " %(r_body_sentiment)s," \
-              " %(r_body_sentiment_counts)s," \
-              " %(r_body_emotion_anger)s," \
-              " %(r_body_emotion_disgust)s," \
-              " %(r_body_emotion_fear)s," \
-              " %(r_body_emotion_happiness)s," \
-              " %(r_body_emotion_sadness)s," \
-              " %(r_body_emotion_surprise)s," \
-              " array%(r_sim_par_embedding)s," \
-              " %(r_sim_par_similarity)s," \
-              " %(r_sim_par_subjectivity)s," \
-              " %(r_sim_par_subjectivity_counts)s," \
-              " %(r_sim_par_sentiment)s," \
-              " %(r_sim_par_sentiment_counts)s," \
-              " %(r_sim_par_emotion_anger)s," \
-              " %(r_sim_par_emotion_disgust)s," \
-              " %(r_sim_par_emotion_fear)s," \
-              " %(r_sim_par_emotion_happiness)s," \
-              " %(r_sim_par_emotion_sadness)s," \
-              " %(r_sim_par_emotion_surprise)s," \
-              " array%(r_sim_sent_embedding)s," \
-              " %(r_sim_sent_similarity)s," \
-              " %(r_sim_sent_subjectivity)s," \
-              " %(r_sim_sent_subjectivity_counts)s," \
-              " %(r_sim_sent_sentiment)s," \
-              " %(r_sim_sent_sentiment_counts)s," \
-              " %(r_sim_sent_emotion_anger)s," \
-              " %(r_sim_sent_emotion_disgust)s," \
-              " %(r_sim_sent_emotion_fear)s," \
-              " %(r_sim_sent_emotion_happiness)s," \
-              " %(r_sim_sent_emotion_sadness)s," \
-              " %(r_sim_sent_emotion_surprise)s," \
-              " %(predict_label)s," \
-              " %(predict_proba)s," \
-              " %(statement_id)s);"
+        sql1 = "SELECT MAX(feature_statement.harvest_iteration)" \
+               " FROM feature_statement" \
+               " WHERE feature_statement.statement_id = %s;"
+        sql2 = "INSERT INTO feature_statement (" \
+               " s_embedding," \
+               " s_subjectivity," \
+               " s_subjectivity_counts," \
+               " s_sentiment," \
+               " s_sentiment_counts," \
+               " s_emotion_anger," \
+               " s_emotion_disgust," \
+               " s_emotion_fear," \
+               " s_emotion_happiness," \
+               " s_emotion_sadness," \
+               " s_emotion_surprise," \
+               " r_title_embedding," \
+               " r_title_similarity," \
+               " r_title_subjectivity," \
+               " r_title_subjectivity_counts," \
+               " r_title_sentiment," \
+               " r_title_sentiment_counts," \
+               " r_title_emotion_anger," \
+               " r_title_emotion_disgust," \
+               " r_title_emotion_fear," \
+               " r_title_emotion_happiness," \
+               " r_title_emotion_sadness," \
+               " r_title_emotion_surprise," \
+               " r_body_embedding," \
+               " r_body_similarity," \
+               " r_body_subjectivity," \
+               " r_body_subjectivity_counts," \
+               " r_body_sentiment," \
+               " r_body_sentiment_counts," \
+               " r_body_emotion_anger," \
+               " r_body_emotion_disgust," \
+               " r_body_emotion_fear," \
+               " r_body_emotion_happiness," \
+               " r_body_emotion_sadness," \
+               " r_body_emotion_surprise," \
+               " r_sim_par_embedding," \
+               " r_sim_par_similarity," \
+               " r_sim_par_subjectivity," \
+               " r_sim_par_subjectivity_counts," \
+               " r_sim_par_sentiment," \
+               " r_sim_par_sentiment_counts," \
+               " r_sim_par_emotion_anger," \
+               " r_sim_par_emotion_disgust," \
+               " r_sim_par_emotion_fear," \
+               " r_sim_par_emotion_happiness," \
+               " r_sim_par_emotion_sadness," \
+               " r_sim_par_emotion_surprise," \
+               " r_sim_sent_embedding," \
+               " r_sim_sent_similarity," \
+               " r_sim_sent_subjectivity," \
+               " r_sim_sent_subjectivity_counts," \
+               " r_sim_sent_sentiment," \
+               " r_sim_sent_sentiment_counts," \
+               " r_sim_sent_emotion_anger," \
+               " r_sim_sent_emotion_disgust," \
+               " r_sim_sent_emotion_fear," \
+               " r_sim_sent_emotion_happiness," \
+               " r_sim_sent_emotion_sadness," \
+               " r_sim_sent_emotion_surprise," \
+               " predict_label," \
+               " predict_proba," \
+               " harvest_iteration," \
+               " statement_id)" \
+               " VALUES (" \
+               " array%(s_embedding)s," \
+               " %(s_subjectivity)s," \
+               " %(s_subjectivity_counts)s," \
+               " %(s_sentiment)s," \
+               " %(s_sentiment_counts)s," \
+               " %(s_emotion_anger)s," \
+               " %(s_emotion_disgust)s," \
+               " %(s_emotion_fear)s," \
+               " %(s_emotion_happiness)s," \
+               " %(s_emotion_sadness)s," \
+               " %(s_emotion_surprise)s," \
+               " array%(r_title_embedding)s," \
+               " %(r_title_similarity)s," \
+               " %(r_title_subjectivity)s," \
+               " %(r_title_subjectivity_counts)s," \
+               " %(r_title_sentiment)s," \
+               " %(r_title_sentiment_counts)s," \
+               " %(r_title_emotion_anger)s," \
+               " %(r_title_emotion_disgust)s," \
+               " %(r_title_emotion_fear)s," \
+               " %(r_title_emotion_happiness)s," \
+               " %(r_title_emotion_sadness)s," \
+               " %(r_title_emotion_surprise)s," \
+               " array%(r_body_embedding)s," \
+               " %(r_body_similarity)s," \
+               " %(r_body_subjectivity)s," \
+               " %(r_body_subjectivity_counts)s," \
+               " %(r_body_sentiment)s," \
+               " %(r_body_sentiment_counts)s," \
+               " %(r_body_emotion_anger)s," \
+               " %(r_body_emotion_disgust)s," \
+               " %(r_body_emotion_fear)s," \
+               " %(r_body_emotion_happiness)s," \
+               " %(r_body_emotion_sadness)s," \
+               " %(r_body_emotion_surprise)s," \
+               " array%(r_sim_par_embedding)s," \
+               " %(r_sim_par_similarity)s," \
+               " %(r_sim_par_subjectivity)s," \
+               " %(r_sim_par_subjectivity_counts)s," \
+               " %(r_sim_par_sentiment)s," \
+               " %(r_sim_par_sentiment_counts)s," \
+               " %(r_sim_par_emotion_anger)s," \
+               " %(r_sim_par_emotion_disgust)s," \
+               " %(r_sim_par_emotion_fear)s," \
+               " %(r_sim_par_emotion_happiness)s," \
+               " %(r_sim_par_emotion_sadness)s," \
+               " %(r_sim_par_emotion_surprise)s," \
+               " array%(r_sim_sent_embedding)s," \
+               " %(r_sim_sent_similarity)s," \
+               " %(r_sim_sent_subjectivity)s," \
+               " %(r_sim_sent_subjectivity_counts)s," \
+               " %(r_sim_sent_sentiment)s," \
+               " %(r_sim_sent_sentiment_counts)s," \
+               " %(r_sim_sent_emotion_anger)s," \
+               " %(r_sim_sent_emotion_disgust)s," \
+               " %(r_sim_sent_emotion_fear)s," \
+               " %(r_sim_sent_emotion_happiness)s," \
+               " %(r_sim_sent_emotion_sadness)s," \
+               " %(r_sim_sent_emotion_surprise)s," \
+               " %(predict_label)s," \
+               " %(predict_proba)s," \
+               " %(harvest_iteration)s," \
+               " %(statement_id)s);"
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
+            cur.execute(sql1, (s_id,))
+            res = cur.fetchone()[0]
+            h_iter = res + 1 if res else 1
             features_record['predict_label'] = True if np.argmax(
                 s_preds) == 1 else False
             features_record['predict_proba'] = np.max(s_preds)
+            features_record['harvest_iteration'] = h_iter
             features_record['statement_id'] = s_id
-            cur.execute(sql, features_record)
+            cur.execute(sql2, features_record)
             conn.commit()
             cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
