@@ -1,6 +1,8 @@
 import os
 import argparse
+import time
 
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -207,10 +209,12 @@ class Interface:
                 and cmd_args.search_settings and cmd_args.harvest_settings \
                 and cmd_args.features_settings and cmd_args.db_settings:
 
-            statement_ids = [1, 2]
+            statement_ids = [2, 4, 5]
             statement_texts = [
-                'Τι χρήματα παίρνουν οι αιτούντες άσυλο',
-                'Σάλος για ΜΚΟ που «διχοτομεί» τη Λέσβο']
+                'Προσοχή, όμως. Το Μεταναστευτικό τώρα αποκτά μία νέα διάσταση, καθώς στις ροές προς την Ελλάδα περιλαμβάνονται άνθρωποι από το Ιράν -όπου είχαμε πολλά κρούσματα Κορωνοϊού- και πολλοί διερχόμενοι από το Αφγανιστάν. Τα νησιά μας, συνεπώς, τα οποία είναι, ήδη, επιβαρυμένα σε θέματα δημόσιας υγείας πρέπει να προστατευτούν διπλά. Να τα διασφαλίσουμε. Να το πω απλά, να κάνουμε ό,τι περνά από το χέρι μας για να αποφύγουμε την εμφάνιση του ιού -ειδικά εκεί.   ',
+                'Μετανάστες στον Έβρο: «Μας έβγαλαν από τη φυλακή και μας έστειλαν στα σύνορα». ',
+                'Έτοιμοι για «απόβαση» στη Λέσβο 150.000 μετανάστες και πρόσφυγες.'
+            ]
 
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.search_settings)
             with open(path, 'r') as f:
@@ -260,7 +264,6 @@ class Interface:
                 dbh.insert_statement_resources(s_id, resource_records)
                 dbh.insert_statement_features(s_id, s_features, s_preds)
 
-        # TODO complete train_task_demo
         elif cmd_args.action == 'train_task_demo' \
                 and cmd_args.train_settings and cmd_args.db_settings:
             path = os.path.join(DirConf.CONFIG_DIR, cmd_args.train_settings)
@@ -272,16 +275,21 @@ class Interface:
             with open(path, 'r') as f:
                 db_params = yaml.safe_load(f)
             dbh = DBHandler(**db_params)
-            included_feats = [
-                f for k, v in t.data_params['features'].items() for f in v]
-            # TODO fetch only included features. convert them to a dataframe
-            #  and pass it to t.run(). Also, query statement table for the
-            #  labels and pass them too in t.run()
+
+            features_records = dbh.fetch_statement_features(
+                train_params['features'])
+            features = np.vstack([np.hstack(fr) for fr in features_records])
+            labels = dbh.fetch_statement_labels()
+            # TODO investigate why there are no none values here like
+            #  those in run_dev
+            t.run(features, labels)
 
             if not os.path.exists(DirConf.MODELS_DIR):
                 os.mkdir(DirConf.MODELS_DIR)
-            path = os.path.join(
-                DirConf.MODELS_DIR, t.save_params['name'])
+            fname = train_params['save']['prefix'] + time.strftime(
+                train_params['save']['datetime']) + train_params[
+                'save']['suffix']
+            path = os.path.join(DirConf.MODELS_DIR, fname)
             t.save_model(path)
 
 

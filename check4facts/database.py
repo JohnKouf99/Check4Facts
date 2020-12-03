@@ -192,7 +192,8 @@ class DBHandler:
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
-            features_record['predict_label'] = True if np.argmax(s_preds) == 1 else False
+            features_record['predict_label'] = True if np.argmax(
+                s_preds) == 1 else False
             features_record['predict_proba'] = np.max(s_preds)
             features_record['statement_id'] = s_id
             cur.execute(sql, features_record)
@@ -203,7 +204,6 @@ class DBHandler:
         finally:
             if conn is not None: conn.close()
 
-    # TODO
     def fetch_statement_features(self, features):
         conn, res = None, None
         sql = "SELECT {} FROM feature_statement;".format(', '.join(features))
@@ -212,6 +212,22 @@ class DBHandler:
             cur = conn.cursor()
             cur.execute(sql)
             res = cur.fetchall()
+            conn.commit()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None: conn.close()
+            return res
+
+    def fetch_statement_labels(self):
+        conn, res = None, None
+        # TODO use true_label instead (maybe from 'statement' table)
+        sql = "SELECT predict_label FROM feature_statement;"
+        try:
+            conn = psycopg2.connect(**self.conn_params)
+            cur = conn.cursor()
+            cur.execute(sql)
+            res = [r[0] for r in cur.fetchall()]
             conn.commit()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
