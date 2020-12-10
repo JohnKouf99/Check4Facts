@@ -68,6 +68,7 @@ class DBHandler:
                " WHERE feature_statement.statement_id = %s;"
         sql2 = "INSERT INTO feature_statement (" \
                " s_embedding," \
+               " s_fertile_terms," \
                " s_subjectivity," \
                " s_subjectivity_counts," \
                " s_sentiment," \
@@ -79,6 +80,7 @@ class DBHandler:
                " s_emotion_sadness," \
                " s_emotion_surprise," \
                " r_title_embedding," \
+               " r_title_fertile_terms," \
                " r_title_similarity," \
                " r_title_subjectivity," \
                " r_title_subjectivity_counts," \
@@ -103,6 +105,7 @@ class DBHandler:
                " r_body_emotion_sadness," \
                " r_body_emotion_surprise," \
                " r_sim_par_embedding," \
+               " r_sim_par_fertile_terms," \
                " r_sim_par_similarity," \
                " r_sim_par_subjectivity," \
                " r_sim_par_subjectivity_counts," \
@@ -115,6 +118,7 @@ class DBHandler:
                " r_sim_par_emotion_sadness," \
                " r_sim_par_emotion_surprise," \
                " r_sim_sent_embedding," \
+               " r_sim_sent_fertile_terms," \
                " r_sim_sent_similarity," \
                " r_sim_sent_subjectivity," \
                " r_sim_sent_subjectivity_counts," \
@@ -132,6 +136,7 @@ class DBHandler:
                " statement_id)" \
                " VALUES (" \
                " array%(s_embedding)s," \
+               " %(s_fertile_terms)s," \
                " %(s_subjectivity)s," \
                " array%(s_subjectivity_counts)s," \
                " %(s_sentiment)s," \
@@ -143,6 +148,7 @@ class DBHandler:
                " array%(s_emotion_sadness)s," \
                " array%(s_emotion_surprise)s," \
                " array%(r_title_embedding)s," \
+               " %(r_title_fertile_terms)s," \
                " %(r_title_similarity)s," \
                " %(r_title_subjectivity)s," \
                " array%(r_title_subjectivity_counts)s," \
@@ -167,6 +173,7 @@ class DBHandler:
                " array%(r_body_emotion_sadness)s," \
                " array%(r_body_emotion_surprise)s," \
                " array%(r_sim_par_embedding)s," \
+               " %(r_sim_par_fertile_terms)s," \
                " %(r_sim_par_similarity)s," \
                " %(r_sim_par_subjectivity)s," \
                " array%(r_sim_par_subjectivity_counts)s," \
@@ -179,6 +186,7 @@ class DBHandler:
                " array%(r_sim_par_emotion_sadness)s," \
                " array%(r_sim_par_emotion_surprise)s," \
                " array%(r_sim_sent_embedding)s," \
+               " %(r_sim_sent_fertile_terms)s," \
                " %(r_sim_sent_similarity)s," \
                " %(r_sim_sent_subjectivity)s," \
                " array%(r_sim_sent_subjectivity_counts)s," \

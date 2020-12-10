@@ -28,6 +28,7 @@ install = "*"
 uwsgi = "*"
 uwsgidecorators = "*"
 joblib = "*"
+snowballstemmer = "*"
 
 [requires]
 python_version = "3.7"
