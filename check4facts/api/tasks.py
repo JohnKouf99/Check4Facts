@@ -8,12 +8,13 @@ from check4facts.scripts.harvest import Harvester
 from check4facts.scripts.search import SearchEngine
 from check4facts.train import Trainer
 
+
 @thread
 def analyze_task(statement, dbh):
     statement_id = statement.get('id')
     statement_text = statement.get('text')
 
-    print(f'Started analyze procedure for statement id: "{statement_id}"')
+    print(f'[Worker: {os.getpid()}] Started analyze procedure for statement id: "{statement_id}"')
 
     path = os.path.join(DirConf.CONFIG_DIR, 'search_config.yml')  # when using uwsgi.
     with open(path, 'r') as f:
@@ -34,6 +35,10 @@ def analyze_task(statement, dbh):
     # Using first element only for the result cause only one statement is being checked.
     harvest_results = h.run(articles)[0]
 
+    if harvest_results.empty:
+        print(f'[Worker: {os.getpid()}] No resources found for statement id: "{statement_id}"')
+        return
+
     path = os.path.join(DirConf.CONFIG_DIR, 'features_config.yml')  # while using uwsgi
     with open(path, 'r') as f:
         features_params = yaml.safe_load(f)
@@ -50,10 +55,9 @@ def analyze_task(statement, dbh):
 
     resource_records = harvest_results.to_dict('records')
     dbh.insert_statement_resources(statement_id, resource_records)
-    print(f'Finished storing harvest results for statement id: "{statement_id}"')
-    # features_record = features_results.to_dict('records')[0]
+    print(f'[Worker: {os.getpid()}] Finished storing harvest results for statement id: "{statement_id}"')
     dbh.insert_statement_features(statement_id, features_results, predict_result)
-    print(f'Finished storing features results for statement id: "{statement_id}"')
+    print(f'[Worker: {os.getpid()}] Finished storing features results for statement id: "{statement_id}"')
 
 
 @thread
