@@ -287,11 +287,10 @@ class Interface:
 
             if not os.path.exists(DirConf.MODELS_DIR):
                 os.mkdir(DirConf.MODELS_DIR)
-            fname = train_params['save']['prefix'] + time.strftime(
-                train_params['save']['datetime']) + train_params[
-                'save']['suffix']
+            fname = t.best_model['clf'] + '_' + time.strftime(
+                '%Y-%m-%d-%H:%M') + '.joblib'
             path = os.path.join(DirConf.MODELS_DIR, fname)
-            t.save_model(path)
+            t.save_best_model(path)
 
 
 if __name__ == "__main__":

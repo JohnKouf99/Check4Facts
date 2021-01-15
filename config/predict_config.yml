@@ -1,6 +1,5 @@
 model:
-  name: 'RF'
-  path: 'data/trainer_results/rf_dev_2020-12-03-20:09.joblib'
+  path: 'data/trainer_results/dt_2021-01-13-12:24.joblib'
 features: [
   's_embedding',
   's_subjectivity',

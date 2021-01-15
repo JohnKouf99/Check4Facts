@@ -3,8 +3,8 @@ import time
 
 import numpy as np
 import pandas as pd
+from joblib import load
 
-import check4facts.models as models
 from check4facts.config import DirConf
 
 
@@ -13,12 +13,7 @@ class Predictor:
     def __init__(self, **kwargs):
         self.model_params = kwargs['model']
         self.features = kwargs['features']
-        self.model = self.get_model()
-
-    def get_model(self):
-        model_class = getattr(models, self.model_params['name'])
-        model = model_class().load(self.model_params['path'])
-        return model
+        self.model = load(self.model_params['path'])
 
     def prepare_data(self, features_list):
         features_df = pd.DataFrame(features_list, columns=self.features)
