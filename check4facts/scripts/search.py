@@ -16,7 +16,7 @@ class SearchEngine:
         self.api_specific_params = kwargs['api_specific']
         self.standard_query_params = kwargs['standard_query']
         self.service = build(
-            'customsearch', 'v1',
+            'customsearch', 'v1', cache_discovery=False,
             developerKey=self.standard_query_params['api_key'])
 
     @staticmethod
