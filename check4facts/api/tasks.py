@@ -1,6 +1,9 @@
 import os
+import time
 import yaml
-from celery import shared_task
+import numpy as np
+from celery import result, shared_task
+from check4facts.train import Trainer
 from check4facts.config import DirConf
 from check4facts.predict import Predictor
 from check4facts.database import DBHandler
@@ -8,11 +11,15 @@ from check4facts.scripts.harvest import Harvester
 from check4facts.scripts.search import SearchEngine
 from check4facts.scripts.features import FeaturesExtractor
 
-
 db_path = os.path.join(DirConf.CONFIG_DIR, 'db_config.yml')  # while using uwsgi
 with open(db_path, 'r') as db_f:
     db_params = yaml.safe_load(db_f)
 dbh = DBHandler(**db_params)
+
+
+@shared_task(bind=True)
+def status_task(self, task_id):
+    return result.AsyncResult(task_id)
 
 
 @shared_task(bind=True)
@@ -80,3 +87,40 @@ def analyze_task(self, statement):
     print(f'[Worker: {os.getpid()}] Finished storing harvest results for statement id: "{statement_id}"')
     dbh.insert_statement_features(statement_id, features_results, predict_result)
     print(f'[Worker: {os.getpid()}] Finished storing features results for statement id: "{statement_id}"')
+
+
+@shared_task(bind=True)
+def train_task(self):
+    # Currently state of task is not queried.
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            'current': 1,
+            'total': 2,
+            'status': f'Initiated Model Training on "{time.strftime("%Y-%m-%d-%H:%M")}"'
+        }
+    )
+    path = os.path.join(DirConf.CONFIG_DIR, 'train_config.yml')
+    with open(path, 'r') as f:
+        train_params = yaml.safe_load(f)
+    t = Trainer(**train_params)
+
+    features_records = dbh.fetch_statement_features(train_params['features'])
+    features = np.vstack([np.hstack(f) for f in features_records])
+    labels = dbh.fetch_statement_labels()
+    t.run(features, labels)
+
+    if not os.path.exists(DirConf.MODELS_DIR):
+        os.mkdir(DirConf.MODELS_DIR)
+    fname = t.best_model['clf'] + '_' + time.strftime(
+        '%Y-%m-%d-%H:%M') + '.joblib'
+    path = os.path.join(DirConf.MODELS_DIR, fname)
+    t.save_best_model(path)
+    self.update_state(
+        state='FINISHED',
+        meta={
+            'current': 2,
+            'total': 2,
+            'status': f'Finished Model Training on "{time.strftime("%Y-%m-%d-%H:%M")}"'
+        }
+    )
