@@ -1,4 +1,5 @@
 *__pycache__*
 data/*
+misc/*
 .idea
 .DS_Store

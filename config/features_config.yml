@@ -3,7 +3,7 @@ basic:
   lexicon: 'greek_sentiment_lexicon.tsv'
   included_feats: [
     'embedding', 'similarity', 'subjectivity', 'subjectivity_counts',
-    'sentiment', 'sentiment_counts', 'emotion']
+    'sentiment', 'sentiment_counts', 'emotion', 'pg_polarity_counts']
   included_resource_parts: ['title', 'body', 'sim_par', 'sim_sent']
 embeddings: null
 similarity: null
