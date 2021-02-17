@@ -14,40 +14,46 @@ client.conf.update(app.config)
 CORS(app)
 
 
-def inspect(method):
-    inspect_app = Celery(app.name, backend=app.config['result_backend'], broker=app.config['CELERY_BROKER_URL'])
-    return getattr(inspect_app.control.inspect(), method)()
-
-
 @app.route('/analyze', methods=['POST'])
 def analyze():
     statement = request.json
 
     task = analyze_task.apply_async(kwargs={'statement': statement})
 
-    return jsonify({'started': True, 'taskId': task.task_id})
+    return jsonify({'status': 'PROGRESS',
+                    'taskId': task.task_id,
+                    'taskInfo': {'current': 1, 'total': 4,
+                                 'type': f'{statement.get("id")}'}
+                    })
 
 
 @app.route('/train', methods=['POST'])
 def train():
-
     task = train_task.apply_async(task_id=f"train_task_on_{time.strftime('%Y-%m-%d-%H:%M')}")
 
-    return jsonify({'started': True, 'taskId': task.task_id})
+    return jsonify({'status': 'PROGRESS',
+                    'taskId': task.task_id,
+                    'taskInfo': {'current': 1, 'total': 2, 'type': 'TRAIN'}
+                    })
 
 
 @app.route('/task-status/<task_id>', methods=['GET'])
 def task_status(task_id):
-
     result = status_task(task_id)
 
-    return jsonify({'taskId': task_id, 'status': result.status, 'info': result.info})
+    return jsonify({'taskId': task_id, 'status': result.status, 'taskInfo': result.info})
 
 
-@app.route('/active-tasks', methods=['GET'])
-def active_tasks():
+@app.route('/batch-task-status', methods=['POST'])
+def batch_task_status():
+    json = request.json
 
-    return jsonify({'tasks': inspect('active')})
+    response = []
+    for j in json:
+        result = status_task(j['id'])
+        response.append({'taskId': j['id'], 'status': result.status, 'taskInfo': result.info})
+
+    return jsonify(response)
 
 
 if __name__ == '__main__':
