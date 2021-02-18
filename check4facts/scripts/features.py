@@ -7,6 +7,7 @@ import pandas as pd
 import spacy
 from nltk.corpus import stopwords
 from snowballstemmer import stemmer
+from polyglot.text import Text
 
 from check4facts.config import DirConf
 
@@ -103,6 +104,14 @@ class FeaturesExtractor:
                 [np.min(scores), np.mean(scores), np.max(scores), n_tokens])
         return emotions
 
+    @staticmethod
+    def get_pg_polarity_counts(sent):
+        text = Text(sent)
+        scores = [w.polarity for w in text.words]
+        neg_tokens = sum(s < 0 for s in scores)
+        pos_tokens = sum(s > 0 for s in scores)
+        return np.array([neg_tokens, pos_tokens])
+
     def aggregate_sentence_features(self, feats_list):
         n_sentences = len(feats_list)
         aggr_feats = {'fertile_terms': np.sum([
@@ -158,6 +167,13 @@ class FeaturesExtractor:
                 n_emo_sents = sum([True if f[3] > 0 else False for f in feats])
                 aggr_feats['emotion'][emotion] = np.array([
                     min_, avg_, max_, n_emo_sents / n_sentences])
+        if 'pg_polarity_counts' in self.basic_params['included_feats']:
+            feats = [d['pg_polarity_counts'] for d in feats_list]
+            n_neg_sents = sum([True if f[0] > 0 else False for f in feats])
+            n_pos_sents = sum([True if f[1] > 0 else False for f in feats])
+            aggr_feats['pg_polarity_counts'] = np.array([
+                n_neg_sents / n_sentences,
+                n_pos_sents / n_sentences])
         return aggr_feats
 
     def aggregate_body_features(self, feats_list):
@@ -196,6 +212,11 @@ class FeaturesExtractor:
                 n_emo_pars = sum([True if f[3] > 0 else False for f in feats])
                 aggr_feats['emotion'][emotion] = np.array([
                     min_, avg_, max_, n_emo_pars])
+        if 'pg_polarity_counts' in self.basic_params['included_feats']:
+            feats = [d['pg_polarity_counts'] for d in feats_list]
+            n_neg_pars = sum([True if f[0] > 0 else False for f in feats])
+            n_pos_pars = sum([True if f[1] > 0 else False for f in feats])
+            aggr_feats['pg_polarity_counts'] = np.array([n_neg_pars, n_pos_pars])
         return aggr_feats
 
     def aggregate_bodies_features(self, feats_list):
@@ -237,6 +258,13 @@ class FeaturesExtractor:
                 n_emo_pars = np.sum(feats, axis=0)[3]
                 aggr_feats['emotion'][emotion] = np.array([
                     min_, avg_, max_, n_emo_pars / aggr_feats['n_pars']])
+        if 'pg_polarity_counts' in self.basic_params['included_feats']:
+            feats = [d['pg_polarity_counts'] for d in feats_list]
+            n_neg_pars = np.sum(feats, axis=0)[0]
+            n_pos_pars = np.sum(feats, axis=0)[1]
+            aggr_feats['pg_polarity_counts'] = np.array(
+                [n_neg_pars / aggr_feats['n_pars'],
+                 n_pos_pars / aggr_feats['n_pars']])
         return aggr_feats
 
     def get_sentence_features(self, sent, statement):
@@ -248,10 +276,6 @@ class FeaturesExtractor:
             self.lexicon[self.lexicon['stem'] == self.stemmer.stemWord(t.text)]
             for t in sent_doc if
             self.stemmer.stemWord(t.text) in self.lexicon['stem'].values]
-        # print('Original statement:', sent)
-        # print('Tokens we look up:', ' '.join([self.stemmer.stemWord(t.text) for t in sent_doc]))
-        # print('Matches:', annots)
-        # exit()
         feats = {'fertile_terms': len(sent_doc)}
 
         if 'embedding' in self.basic_params['included_feats']:
@@ -268,6 +292,8 @@ class FeaturesExtractor:
             feats['sentiment_counts'] = self.get_sentiment_counts(annots)
         if 'emotion' in self.basic_params['included_feats']:
             feats['emotion'] = self.get_emotion(annots)
+        if 'pg_polarity_counts' in self.basic_params['included_feats']:
+            feats['pg_polarity_counts'] = self.get_pg_polarity_counts(sent)
         return feats
 
     def get_resource_features(self, title, body, sim_par, sim_sent, statement):

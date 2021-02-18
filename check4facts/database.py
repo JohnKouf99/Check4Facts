@@ -79,6 +79,7 @@ class DBHandler:
                " s_emotion_happiness," \
                " s_emotion_sadness," \
                " s_emotion_surprise," \
+               " s_pg_polarity_counts," \
                " r_title_embedding," \
                " r_title_fertile_terms," \
                " r_title_similarity," \
@@ -92,6 +93,7 @@ class DBHandler:
                " r_title_emotion_happiness," \
                " r_title_emotion_sadness," \
                " r_title_emotion_surprise," \
+               " r_title_pg_polarity_counts," \
                " r_body_embedding," \
                " r_body_similarity," \
                " r_body_subjectivity," \
@@ -104,6 +106,7 @@ class DBHandler:
                " r_body_emotion_happiness," \
                " r_body_emotion_sadness," \
                " r_body_emotion_surprise," \
+               " r_body_pg_polarity_counts," \
                " r_sim_par_embedding," \
                " r_sim_par_fertile_terms," \
                " r_sim_par_similarity," \
@@ -117,6 +120,7 @@ class DBHandler:
                " r_sim_par_emotion_happiness," \
                " r_sim_par_emotion_sadness," \
                " r_sim_par_emotion_surprise," \
+               " r_sim_par_pg_polarity_counts," \
                " r_sim_sent_embedding," \
                " r_sim_sent_fertile_terms," \
                " r_sim_sent_similarity," \
@@ -130,6 +134,7 @@ class DBHandler:
                " r_sim_sent_emotion_happiness," \
                " r_sim_sent_emotion_sadness," \
                " r_sim_sent_emotion_surprise," \
+               " r_sim_sent_pg_polarity_counts," \
                " predict_label," \
                " predict_proba," \
                " harvest_iteration," \
@@ -147,6 +152,7 @@ class DBHandler:
                " array%(s_emotion_happiness)s," \
                " array%(s_emotion_sadness)s," \
                " array%(s_emotion_surprise)s," \
+               " array%(s_pg_polarity_counts)s," \
                " array%(r_title_embedding)s," \
                " %(r_title_fertile_terms)s," \
                " %(r_title_similarity)s," \
@@ -160,6 +166,7 @@ class DBHandler:
                " array%(r_title_emotion_happiness)s," \
                " array%(r_title_emotion_sadness)s," \
                " array%(r_title_emotion_surprise)s," \
+               " array%(r_title_pg_polarity_counts)s," \
                " array%(r_body_embedding)s," \
                " %(r_body_similarity)s," \
                " %(r_body_subjectivity)s," \
@@ -172,6 +179,7 @@ class DBHandler:
                " array%(r_body_emotion_happiness)s," \
                " array%(r_body_emotion_sadness)s," \
                " array%(r_body_emotion_surprise)s," \
+               " array%(r_body_pg_polarity_counts)s," \
                " array%(r_sim_par_embedding)s," \
                " %(r_sim_par_fertile_terms)s," \
                " %(r_sim_par_similarity)s," \
@@ -185,6 +193,7 @@ class DBHandler:
                " array%(r_sim_par_emotion_happiness)s," \
                " array%(r_sim_par_emotion_sadness)s," \
                " array%(r_sim_par_emotion_surprise)s," \
+               " array%(r_sim_par_pg_polarity_counts)s," \
                " array%(r_sim_sent_embedding)s," \
                " %(r_sim_sent_fertile_terms)s," \
                " %(r_sim_sent_similarity)s," \
@@ -198,6 +207,7 @@ class DBHandler:
                " array%(r_sim_sent_emotion_happiness)s," \
                " array%(r_sim_sent_emotion_sadness)s," \
                " array%(r_sim_sent_emotion_surprise)s," \
+               " array%(r_sim_sent_pg_polarity_counts)s," \
                " %(predict_label)s," \
                " %(predict_proba)s," \
                " %(harvest_iteration)s," \

@@ -26,6 +26,11 @@ uwsgi = "*"
 joblib = "*"
 snowballstemmer = "*"
 celery = "*"
+matplotlib = "*"
+polyglot = "*"
+pyicu = "*"
+pycld2 = "*"
+morfessor = "*"
 
 [requires]
 python_version = "3.7"
