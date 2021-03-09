@@ -1,9 +1,15 @@
 basic:
   resource_format: 'html'
 html:
+  headers:
+    user-agent: 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0'
   timeout: 5.0
-  parser: 'html.parser'
-  blacklist: ['input', 'button', 'time', 'template',
-              'form', 'select', 'footer']
+  max_content_size: 5242880  # In bytes
+  parser: 'lxml'
+  blacklist: [
+    'area', 'base', 'basefont', 'button', 'datalist', 'head', 'footer', 'form',
+    'input', 'link', 'meta', 'noembed', 'noframes', 'noscript', 'param', 'rp',
+    'script', 'select', 'source', 'style', 'template', 'track', 'time', 'title'
+  ]
 similarity:
   metric: 'bow'  # Choose between 'bow' and 'emb'

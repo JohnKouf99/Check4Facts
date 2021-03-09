@@ -34,6 +34,7 @@ features: [
   's_emotion_happiness',
   's_emotion_sadness',
   's_emotion_surprise',
+  's_pg_polarity_counts',
   'r_title_embedding',
   'r_title_similarity',
   'r_title_subjectivity',
@@ -46,6 +47,7 @@ features: [
   'r_title_emotion_happiness',
   'r_title_emotion_sadness',
   'r_title_emotion_surprise',
+  'r_title_pg_polarity_counts',
   'r_body_embedding',
   'r_body_similarity',
   'r_body_subjectivity',
@@ -58,6 +60,7 @@ features: [
   'r_body_emotion_happiness',
   'r_body_emotion_sadness',
   'r_body_emotion_surprise',
+  'r_body_pg_polarity_counts',
   'r_sim_par_embedding',
   'r_sim_par_similarity',
   'r_sim_par_subjectivity',
@@ -70,6 +73,7 @@ features: [
   'r_sim_par_emotion_happiness',
   'r_sim_par_emotion_sadness',
   'r_sim_par_emotion_surprise',
+  'r_sim_par_pg_polarity_counts',
   'r_sim_sent_embedding',
   'r_sim_sent_similarity',
   'r_sim_sent_subjectivity',
@@ -81,5 +85,6 @@ features: [
   'r_sim_sent_emotion_fear',
   'r_sim_sent_emotion_happiness',
   'r_sim_sent_emotion_sadness',
-  'r_sim_sent_emotion_surprise'
+  'r_sim_sent_emotion_surprise',
+  'r_sim_sent_pg_polarity_counts'
 ]

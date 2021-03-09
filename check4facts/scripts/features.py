@@ -51,7 +51,6 @@ class FeaturesExtractor:
                         range(1, 5)]
                 for col in cols:
                     self.lexicon_[col] = self.lexicon_[col].map(scores)
-            # self.lexicon_.to_csv('NEWLEXICON.csv', index=False)
         return self.lexicon_
 
     @staticmethod
@@ -106,7 +105,7 @@ class FeaturesExtractor:
 
     @staticmethod
     def get_pg_polarity_counts(sent):
-        text = Text(sent)
+        text = Text(sent, hint_language_code='el')
         scores = [w.polarity for w in text.words]
         neg_tokens = sum(s < 0 for s in scores)
         pos_tokens = sum(s > 0 for s in scores)
@@ -267,6 +266,27 @@ class FeaturesExtractor:
                  n_pos_pars / aggr_feats['n_pars']])
         return aggr_feats
 
+    def get_default_sentence_features(self):
+        feats = {'fertile_terms': 0}
+        if 'embedding' in self.basic_params['included_feats']:
+            feats['embedding'] = np.zeros((300, )).astype('float32')
+        if 'similarity' in self.basic_params['included_feats']:
+            feats['similarity'] = np.float64(0)
+        if 'subjectivity' in self.basic_params['included_feats']:
+            feats['subjectivity'] = 0.5
+        if 'subjectivity_counts' in self.basic_params['included_feats']:
+            feats['subjectivity_counts'] = np.array([0, 0])
+        if 'sentiment' in self.basic_params['included_feats']:
+            feats['sentiment'] = 0.5
+        if 'sentiment_counts' in self.basic_params['included_feats']:
+            feats['sentiment_counts'] = np.array([0, 0])
+        if 'emotion' in self.basic_params['included_feats']:
+            feats['emotion'] = {
+                e: np.array([0, 0, 0, 0]) for e in self.emo_params['prefixes']}
+        if 'pg_polarity_counts' in self.basic_params['included_feats']:
+            feats['pg_polarity_counts'] = np.array([0, 0])
+        return feats
+
     def get_sentence_features(self, sent, statement):
         sent_doc = self.nlp(self.text_preprocess(sent)[:self.nlp.max_length])
         # annots = [
@@ -298,21 +318,36 @@ class FeaturesExtractor:
 
     def get_resource_features(self, title, body, sim_par, sim_sent, statement):
         feats = {}
-
         if 'title' in self.basic_params['included_resource_parts']:
-            feats['title'] = self.get_sentence_features(title, statement)
+            if title:
+                feats['title'] = self.get_sentence_features(title, statement)
+            else:
+                feats['title'] = self.get_default_sentence_features()
         if 'body' in self.basic_params['included_resource_parts']:
-            pars_feats = [self.get_sentence_features(par, statement)
-                          for par in body.splitlines()]
-            feats['body'] = self.aggregate_body_features(pars_feats)
+            if body:
+                pars_feats = [self.get_sentence_features(par, statement)
+                              for par in body.splitlines()]
+                feats['body'] = self.aggregate_body_features(pars_feats)
+            else:
+                feats['body'] = self.get_default_sentence_features()
+                feats['body']['n_pars'] = 0
         if 'sim_par' in self.basic_params['included_resource_parts']:
-            feats['sim_par'] = self.get_sentence_features(sim_par, statement)
+            if sim_par:
+                feats['sim_par'] = self.get_sentence_features(
+                    sim_par, statement)
+            else:
+                feats['sim_par'] = self.get_default_sentence_features()
         if 'sim_sent' in self.basic_params['included_resource_parts']:
-            feats['sim_sent'] = self.get_sentence_features(sim_sent, statement)
+            if sim_sent:
+                feats['sim_sent'] = self.get_sentence_features(
+                    sim_sent, statement)
+            else:
+                feats['sim_sent'] = self.get_default_sentence_features()
         return feats
 
     def get_statement_features(self, d):
-        s_text, s_resources = d['s_text'], d['s_resources'].dropna()
+        s_text = d['s_text']
+        s_resources = d['s_resources'].where(pd.notnull(d['s_resources']), None)
         feats = {'s': self.get_sentence_features(s_text, s_text), 'r': None}
         resources_feats = [self.get_resource_features(
             row.title, row.body, row.sim_par, row.sim_sent, s_text)
@@ -331,10 +366,9 @@ class FeaturesExtractor:
             if 'sim_sent' in self.basic_params['included_resource_parts']:
                 feats['r']['sim_sent'] = self.aggregate_sentence_features(
                     [d['sim_sent'] for d in resources_feats])
-        # TODO investigate how nan are created in some aggregated emotions
-        result = {k: (np.nan_to_num(v) if np.isnan(v).any() else v) for k, v in
-                  flatten_dict(feats).items()}
-        # result = flatten_dict(feats)
+        # result = {k: (np.nan_to_num(v) if np.isnan(v).any() else v) for k, v in
+        #           flatten_dict(feats).items()}
+        result = flatten_dict(feats)
         return result
 
     def run(self, statement_dicts):
