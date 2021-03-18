@@ -85,7 +85,7 @@ def analyze_task(self, statement):
     resource_records = harvest_results.to_dict('records')
     dbh.insert_statement_resources(statement_id, resource_records)
     print(f'[Worker: {os.getpid()}] Finished storing harvest results for statement id: "{statement_id}"')
-    dbh.insert_statement_features(statement_id, features_results, predict_result)
+    dbh.insert_statement_features(statement_id, features_results, predict_result, None)
     print(f'[Worker: {os.getpid()}] Finished storing features results for statement id: "{statement_id}"')
 
 
@@ -123,3 +123,119 @@ def train_task(self):
             'type': 'TRAIN'
         }
     )
+
+
+@shared_task(bind=True)
+def intial_train_task(self):
+    # Initialize all python modules.
+    path = os.path.join(DirConf.CONFIG_DIR, 'search_config.yml')  # when using uwsgi.
+    with open(path, 'r') as f:
+        search_params = yaml.safe_load(f)
+    se = SearchEngine(**search_params)
+
+    path = os.path.join(DirConf.CONFIG_DIR, 'harvest_config.yml')  # while using uwsgi.
+    with open(path, 'r') as f:
+        harvest_params = yaml.safe_load(f)
+    h = Harvester(**harvest_params)
+
+    path = os.path.join(DirConf.CONFIG_DIR, 'features_config.yml')  # while using uwsgi
+    with open(path, 'r') as f:
+        features_params = yaml.safe_load(f)
+    fe = FeaturesExtractor(**features_params)
+
+    # Get all statements from database.
+    statements = dbh.fetch_statements()
+    total_count = len(statements)
+    counter = 0
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            'current': 1,
+            'total': (4 * total_count) + 1,
+            'type': 'INITIAL_TRAIN'
+        }
+    )
+
+    # Execute all steps for each statement.
+    for statement in statements:
+        statement_id, text, true_label = statement[0], statement[1], statement[2]
+        counter += 1
+
+        print(f'Starting search for {statement_id}')
+
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': (4 * counter) + 1,
+                'total': (4 * total_count) + 1,
+                'type': 'INITIAL_TRAIN'
+            }
+        )
+        search_results = se.run([text])[0]
+
+        print(f'Starting harvest for {statement_id}')
+        articles = [{
+            's_id': statement_id,
+            's_text': text,
+            's_resources': search_results
+        }]
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': (4 * counter) + 2,
+                'total': (4 * total_count) + 1,
+                'type': 'INITIAL_TRAIN'
+            }
+        )
+        harvest_results = h.run(articles)[0]
+
+        print(f'Saving Harvest Results to db  for {statement_id}')
+        resource_records = harvest_results.to_dict('records')
+        dbh.insert_statement_resources(statement_id, resource_records)
+
+        print(f'Starting feature for {statement_id}')
+        statement_dicts = [{
+            's_id': statement_id,
+            's_text': text,
+            's_resources': harvest_results
+        }]
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': (4 * counter) + 3,
+                'total': (4 * total_count) + 1,
+                'type': 'INITIAL_TRAIN'
+            }
+        )
+        features_results = fe.run(statement_dicts)[0]
+
+        print(f'Saving Feature Results to db for {statement_id}')
+        dbh.insert_statement_features(statement_id, features_results, None, true_label)
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': (4 * counter) + 4,
+                'total': (4 * total_count) + 1,
+                'type': 'INITIAL_TRAIN'
+            }
+        )
+
+    print(f'Initiating model training.')
+    path = os.path.join(DirConf.CONFIG_DIR, cmd_args.train_settings)
+    with open(path, 'r') as f:
+        train_params = yaml.safe_load(f)
+    t = Trainer(**train_params)
+
+    features_records = dbh.fetch_statement_features(
+        train_params['features'])
+    features = np.vstack([np.hstack(f) for f in features_records])
+    labels = dbh.fetch_statement_labels()
+    t.run(features, labels)
+
+    if not os.path.exists(DirConf.MODELS_DIR):
+        os.mkdir(DirConf.MODELS_DIR)
+    fname = t.best_model['clf'] + '_' + time.strftime(
+        '%Y-%m-%d-%H:%M') + '.joblib'
+    path = os.path.join(DirConf.MODELS_DIR, fname)
+    t.save_best_model(path)
+    print(f'Successfully saved the best model.')

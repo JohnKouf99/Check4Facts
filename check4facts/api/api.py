@@ -1,9 +1,13 @@
+import os
 import time
+import yaml
 from celery import Celery
 from flask_cors import CORS
 from flask import request, jsonify
 from check4facts.api.init import create_app
-from check4facts.api.tasks import status_task, analyze_task, train_task
+from check4facts.api.tasks import status_task, analyze_task, train_task, intial_train_task
+from check4facts.config import DirConf
+from check4facts.database import DBHandler
 
 app = create_app()
 app.config['CELERY_BROKER_URL'] = 'sqla+postgresql://check4facts@localhost:5432/check4facts'
@@ -35,6 +39,27 @@ def train():
                     'taskId': task.task_id,
                     'taskInfo': {'current': 1, 'total': 2, 'type': 'TRAIN'}
                     })
+
+
+@app.route('/intial-train', methods=['GET'])
+def initial_train():
+    db_path = os.path.join(DirConf.CONFIG_DIR, 'db_config.yml')  # while using uwsgi
+    with open(db_path, 'r') as db_f:
+        db_params = yaml.safe_load(db_f)
+    dbh = DBHandler(**db_params)
+    total = dbh.count_statements()
+
+    task = intial_train_task.apply_async()
+
+    return jsonify({
+        'status': 'PROGRESS',
+        'taskId': task.task_id,
+        'taskInfo': {
+            'current': 1,
+            'total': (4 * total) + 1,
+            'type': 'INITIAL_TRAIN'
+        }
+    })
 
 
 @app.route('/task-status/<task_id>', methods=['GET'])
