@@ -288,7 +288,7 @@ class DBHandler:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
             cur.execute(sql)
-            res = cur.fetchmany(10)
+            res = cur.fetchall()
             conn.commit()
             cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
