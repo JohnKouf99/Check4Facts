@@ -6,7 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag, NavigableString, Comment
 import spacy
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
@@ -34,6 +34,8 @@ class Harvester:
         return text
 
     def most_similar(self, texts, text):
+        if not texts:
+            return None
         all_texts = list(map(self.text_preprocess, texts + [text]))
         if self.similarity_params['metric'] == 'bow':
             vec = CountVectorizer().fit_transform(all_texts)
@@ -50,45 +52,97 @@ class Harvester:
             out_f.write(content)
         return
 
+    @staticmethod
+    def get_resource_title(html):
+        title = None
+        if html.title:
+            title = html.title.text.strip()
+        elif html.find('meta', property='og:title'):
+            title = html.find(
+                'meta', property='og:title').get('content').strip()
+        elif html.find('h1'):
+            title = html.find('h1').text.strip()
+        return title
+
+    @staticmethod
+    def get_resource_body_paragraphs(self, html):
+        if not html.body: return None
+
+        texts = [' '.join(text.split()) for text in html.body.find_all(
+            text=lambda text: not isinstance(text, Comment))]
+        texts = [text for text in texts if text]
+
+        # texts = []
+        # for child in html.descendants:
+        #     if type(child) == NavigableString:
+        #         parents = [t for t in child.parents if type(t) == Tag]
+        #         if any(parent.name in self.html_params['blacklist']
+        #                for parent in parents):
+        #             continue
+        #         text = ' '.join(child.string.split())
+        #         if text:
+        #             if child.parent.name == 'a':
+        #                 a_tag = child.parent
+        #                 text = a_tag.get_text().strip()
+        #                 if (type(a_tag.previous_sibling) == NavigableString and
+        #                         a_tag.previous_sibling.string.strip()):
+        #                     texts[-1] = texts[-1] + ' ' + text
+        #                     continue
+        #             elif child.previous_sibling and \
+        #                     child.previous_sibling.name == 'a':
+        #                 texts[-1] = texts[-1] + ' ' + text
+        #                 continue
+        #             texts += [text]
+        # texts = [' '.join(text.split()) for text in texts if text]
+        return texts
+
     def harvest_resource(self, s_id, s_text, r_idx, r_url, save=False):
+        result = {
+            'title': None, 'body': None, 'sim_par': None, 'sim_sent': None}
+
         try:
-            response = requests.get(r_url, timeout=self.html_params['timeout'])
+            response = requests.get(
+                r_url,
+                headers=self.html_params['headers'],
+                timeout=self.html_params['timeout'])
             response.raise_for_status()
+
+            # Skipping aggregator web resources
+            if len(response.content) > self.html_params['max_content_size']:
+                if save: self.save_content_to_xml(
+                    'Too large content. Skipped.', f'{s_id}_{r_idx}.xml')
+                return result
+
         except requests.exceptions.RequestException as e:
             if save: self.save_content_to_xml(
                 f'{type(e)} :: {e}', f'{s_id}_{r_idx}.xml')
-            result = {'title': None, 'body': None,
-                      'sim_par': None, 'sim_sent': None}
             return result
 
-        soup = BeautifulSoup(response.content, self.html_params['parser'])
+        html = BeautifulSoup(response.content, self.html_params['parser'])
         if save: self.save_content_to_xml(
-            soup.prettify(), f'{s_id}_{r_idx}.xml')
-        for element in soup(self.html_params['blacklist']):
+            html.prettify(), f'{s_id}_{r_idx}.xml')
+
+        for element in html(self.html_params['blacklist']):
             element.extract()
 
-        title = soup.title.text.strip() if soup.title else None
-        all_lines = []
-        if soup.body:
-            for child in soup.body.children:
-                if isinstance(child, Tag):
-                    lines = [line.strip()
-                             for line in child.get_text().splitlines()
-                             if len(line.split()) > 10]
-                    all_lines += lines
-        body = '\n'.join(all_lines) if all_lines else None
-        if body:
-            paragraphs = body.splitlines()
+        paragraphs = self.get_resource_body_paragraphs(html)
+        if paragraphs:
+            paragraphs = [p for p in paragraphs if len(p.split()) > 3]
+        if paragraphs:
+            sentences = [s for p in paragraphs for s in sent_tokenize(p)]
+            sentences = [s for s in sentences if len(s.split()) > 3]
             sim_par = self.most_similar(paragraphs, s_text)
-            # TODO Replace below with sent_tokenize on each paragraph
-            #  instead of joining paragraphs first. In order to decide,
-            #  check the quality of results
-            sentences = sent_tokenize(' '.join(paragraphs))
             sim_sent = self.most_similar(sentences, s_text)
+            body = '\n'.join(paragraphs)
         else:
-            sim_par, sim_sent = None, None
-        result = {'title': title, 'body': body,
-                  'sim_par': sim_par, 'sim_sent': sim_sent}
+            body, sim_par, sim_sent = None, None, None
+
+        result = {
+            'title': self.get_resource_title(html),
+            'body': body,
+            'sim_par': sim_par,
+            'sim_sent': sim_sent
+        }
         return result
 
     @staticmethod

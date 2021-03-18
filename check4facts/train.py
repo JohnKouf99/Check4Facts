@@ -56,13 +56,22 @@ class Trainer:
         start_time = time.time()
         if not os.path.exists(DirConf.TRAINER_RESULTS_DIR):
             os.mkdir(DirConf.TRAINER_RESULTS_DIR)
-        statement_df = pd.read_csv(DirConf.CSV_FILE)
+        statement_df = pd.read_csv(DirConf.CSV_FILE).head(60)
         features_df = pd.DataFrame([pd.read_json(os.path.join(
             DirConf.FEATURES_RESULTS_DIR, f'{s_id}.json'), typ='series')
             for s_id in statement_df['Fact id']], columns=self.features)
-        mask = statement_df['Verdict'] == 'UNKNOWN'
-        X = np.vstack(features_df[~mask].apply(np.hstack, axis=1))
-        y = statement_df['Verdict'][~mask].astype(int)
+        # Drop statements with no resources
+        idx1 = list(features_df.dropna().index)
+        # Drop statements with 'UNKNOWN' label
+        idx2 = list(statement_df[~statement_df['Verdict'].isin(
+            ['UNKNOWN', 'Unknown'])].index)
+        idx = list(set(idx1) & set(idx2))
+        statement_df = statement_df[statement_df.index.isin(idx)]
+        features_df = features_df[features_df.index.isin(idx)]
+        X = np.vstack(features_df.apply(np.hstack, axis=1)).astype('float')
+        # TODO Some features contain null in r_body_emotion_anger. Why?
+        X = np.nan_to_num(X)
+        y = statement_df['Verdict'].replace({'TRUE': 1.0, 'FALSE': 0.0})
         self.run(X, y)
         fname = self.best_model['clf'] + '_' + time.strftime(
             '%Y-%m-%d-%H:%M') + '.joblib'
