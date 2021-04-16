@@ -68,6 +68,10 @@ class Interface:
         self.train_task_demo_parser = self.subparsers.add_parser(
             'train_task_demo', help='triggers model training workflow')
 
+        # create parser for "initial_train" command
+        self.initial_train_parser = self.subparsers.add_parser(
+            'initial_train', help='triggers an initial training workflow')
+
     def run(self):
         # arguments for "search_dev" command
         self.search_dev_parser.add_argument(
@@ -133,6 +137,23 @@ class Interface:
         self.train_task_demo_parser.add_argument(
             '--db_settings', type=str, default='db_config.yml',
             help='name of YAML configuration file containing database params')
+
+        # arguments for "initial_train" command
+        self.initial_train_parser.add_argument(
+            '--search_settings', type=str, default='search_config.yml',
+            help='name of YAML configuration file containing search params')
+        self.initial_train_parser.add_argument(
+            '--harvest_settings', type=str, default='harvest_config.yml',
+            help='name of YAML configuration file containing harvest params')
+        self.initial_train_parser.add_argument(
+            '--features_settings', type=str, default='features_config.yml',
+            help='name of YAML configuration file containing features params')
+        self.initial_train_parser.add_argument(
+            '--db_settings', type=str, default='db_config.yml',
+            help='name of YAML configuration file containing database params')
+        self.initial_train_parser.add_argument(
+            '--train_settings', type=str, default='train_config.yml',
+            help='name of YAML configuration file containing training params')
 
         cmd_args = self.parser.parse_args()
 
@@ -291,6 +312,83 @@ class Interface:
                 '%Y-%m-%d-%H:%M') + '.joblib'
             path = os.path.join(DirConf.MODELS_DIR, fname)
             t.save_best_model(path)
+
+        elif cmd_args.action == 'initial_train' \
+                and cmd_args.search_settings and cmd_args.harvest_settings \
+                and cmd_args.features_settings and cmd_args.train_settings and cmd_args.db_settings:
+            # Initialize all python modules.
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.db_settings)
+            with open(path, 'r') as f:
+                db_params = yaml.safe_load(f)
+            dbh = DBHandler(**db_params)
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.search_settings)
+            with open(path, 'r') as f:
+                search_params = yaml.safe_load(f)
+            se = SearchEngine(**search_params)
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.harvest_settings)
+            with open(path, 'r') as f:
+                harvest_params = yaml.safe_load(f)
+            h = Harvester(**harvest_params)
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.features_settings)
+            with open(path, 'r') as f:
+                features_params = yaml.safe_load(f)
+            fe = FeaturesExtractor(**features_params)
+
+            # Get all statements from database.
+            statements = dbh.fetch_statements()
+            total_count = len(statements)
+            print(f'Initiating training on {total_count} Statements from DB.')
+            counter = 0
+            for statement in statements:
+                statement_id, text, true_label = statement[0], statement[1], statement[2]
+                counter += 1
+
+                print(f'Starting search for Statement: "{statement_id}"')
+                search_results = se.run([text])[0]
+
+                print(f'Starting harvest for Statement: "{statement_id}"')
+                articles = [{
+                    's_id': statement_id,
+                    's_text': text,
+                    's_resources': search_results
+                }]
+                harvest_results = h.run(articles)[0]
+
+                print(f'Saving Harvest results of Statement: "{statement_id}"')
+                resource_records = harvest_results.to_dict('records')
+                dbh.insert_statement_resources(statement_id, resource_records)
+
+                print(f'Starting feature for Statement: "{statement_id}"')
+                statement_dicts = [{
+                    's_id': statement_id,
+                    's_text': text,
+                    's_resources': harvest_results
+                }]
+                features_results = fe.run(statement_dicts)[0]
+
+                print(f'Saving Feature results of Statement: "{statement_id}"')
+                dbh.insert_statement_features(statement_id, features_results, None, true_label)
+
+            print(f'Finished search, harvest and feature procedures for all {total_count} Statements.')
+            print(f'Initiating model training.')
+            path = os.path.join(DirConf.CONFIG_DIR, cmd_args.train_settings)
+            with open(path, 'r') as f:
+                train_params = yaml.safe_load(f)
+            t = Trainer(**train_params)
+
+            features_records = dbh.fetch_statement_features(
+                train_params['features'])
+            features = np.vstack([np.hstack(f) for f in features_records])
+            labels = dbh.fetch_statement_labels()
+            t.run(features, labels)
+
+            if not os.path.exists(DirConf.MODELS_DIR):
+                os.mkdir(DirConf.MODELS_DIR)
+            fname = t.best_model['clf'] + '_' + time.strftime(
+                '%Y-%m-%d-%H:%M') + '.joblib'
+            path = os.path.join(DirConf.MODELS_DIR, fname)
+            t.save_best_model(path)
+            print(f'Successfully saved the best model.')
 
 
 if __name__ == "__main__":

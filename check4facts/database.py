@@ -61,7 +61,7 @@ class DBHandler:
         finally:
             if conn is not None: conn.close()
 
-    def insert_statement_features(self, s_id, features_record, s_preds):
+    def insert_statement_features(self, s_id, features_record, s_preds, true_label):
         conn = None
         sql1 = "SELECT MAX(feature_statement.harvest_iteration)" \
                " FROM feature_statement" \
@@ -135,6 +135,7 @@ class DBHandler:
                " r_sim_sent_emotion_sadness," \
                " r_sim_sent_emotion_surprise," \
                " r_sim_sent_pg_polarity_counts," \
+               " true_label," \
                " predict_label," \
                " predict_proba," \
                " harvest_iteration," \
@@ -208,6 +209,7 @@ class DBHandler:
                " array%(r_sim_sent_emotion_sadness)s," \
                " array%(r_sim_sent_emotion_surprise)s," \
                " array%(r_sim_sent_pg_polarity_counts)s," \
+               " %(true_label)s," \
                " %(predict_label)s," \
                " %(predict_proba)s," \
                " %(harvest_iteration)s," \
@@ -218,9 +220,9 @@ class DBHandler:
             cur.execute(sql1, (s_id,))
             res = cur.fetchone()[0]
             h_iter = res + 1 if res else 1
-            features_record['predict_label'] = True if np.argmax(
-                s_preds) == 1 else False
-            features_record['predict_proba'] = np.max(s_preds)
+            features_record['true_label'] = true_label if true_label is not None else None
+            features_record['predict_label'] = (True if np.argmax(s_preds) == 1 else False) if s_preds is not None else None
+            features_record['predict_proba'] = np.max(s_preds) if s_preds is not None else None
             features_record['harvest_iteration'] = h_iter
             features_record['statement_id'] = s_id
             cur.execute(sql2, features_record)
@@ -248,14 +250,47 @@ class DBHandler:
 
     def fetch_statement_labels(self):
         conn, res = None, None
-        # TODO use true_label instead (maybe from 'statement' table)
-        sql = "SELECT predict_label FROM feature_statement;"
+        sql = "SELECT true_label FROM feature_statement;"
         try:
             conn = psycopg2.connect(**self.conn_params)
             cur = conn.cursor()
             cur.execute(sql)
             res = [r[0] for r in cur.fetchall()]
             conn.commit()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None: conn.close()
+            return res
+
+    def count_statements(self):
+        conn, res = None, None
+        sql = "SELECT COUNT(*) FROM statement;"
+        try:
+            conn = psycopg2.connect(**self.conn_params)
+            cur = conn.cursor()
+            cur.execute(sql)
+            res = cur.fetchone()[0]
+            conn.commit()
+            cur.close()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            if conn is not None: conn.close()
+            return res
+
+    # TODO later make it to fetch batch of statements.
+    def fetch_statements(self):
+        conn, res = None, None
+        # Change the requested columns according to the ML model.
+        sql = "SELECT id, text, fact_checker_label FROM statement;"
+        try:
+            conn = psycopg2.connect(**self.conn_params)
+            cur = conn.cursor()
+            cur.execute(sql)
+            res = cur.fetchall()
+            conn.commit()
+            cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:
