@@ -80,7 +80,7 @@ def analyze_task(self, statement):
     self.update_state(state='PROGRESS',
                       meta={'current': 4, 'total': 4,
                             'type': f'{statement_id}'})
-    predict_result = p.run([features_results])[0]
+    predict_result = p.run([features_results]).loc[0, ['pred_0', 'pred_1']].values
 
     resource_records = harvest_results.to_dict('records')
     dbh.insert_statement_resources(statement_id, resource_records)
