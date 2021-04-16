@@ -13,9 +13,9 @@ subjectivity:
   thr: {'OBJ': 0.5, 'SUBJ': 0.5}
 sentiment:
   prefixes: ['polarity']
-  scores: {'N/A': 0.5, 'NEG': 0.0, 'BOTH': 0.5, 'POS': 1.0}
+  scores: {'N/A': 0.5, '1': 0.5, 'NEG': 0.0, 'BOTH': 0.5, 'POS': 1.0}
   thr: {'NEG': 0.5, 'POS': 0.5}
 emotion:
   prefixes: ['anger', 'disgust', 'fear', 'happiness', 'sadness', 'surprise']
-  scores: {'N/A': 0.0, 1: 0.0, 2: 0.25, 3: 0.5, 4: 0.75, 5: 1.0}
+  scores: {'N/A': 0.0, 0: 0.0, 1: 0.0, 2: 0.25, 3: 0.5, 4: 0.75, 5: 1.0}
   thr: 0.0625

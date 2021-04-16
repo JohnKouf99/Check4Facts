@@ -69,8 +69,6 @@ class Trainer:
         statement_df = statement_df[statement_df.index.isin(idx)]
         features_df = features_df[features_df.index.isin(idx)]
         X = np.vstack(features_df.apply(np.hstack, axis=1)).astype('float')
-        # TODO Some features contain null in r_body_emotion_anger. Why?
-        X = np.nan_to_num(X)
         y = statement_df['Verdict'].replace({'TRUE': 1.0, 'FALSE': 0.0})
         self.run(X, y)
         fname = self.best_model['clf'] + '_' + time.strftime(

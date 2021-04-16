@@ -1,5 +1,5 @@
 model:
-  path: 'data/trainer_results/mlp_2021-03-09-18:46.joblib'
+  path: 'data/trainer_results/mlp_2021-03-31-11:39.joblib'
 features: [
   's_embedding',
   's_subjectivity',
