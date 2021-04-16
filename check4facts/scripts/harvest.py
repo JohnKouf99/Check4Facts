@@ -65,7 +65,7 @@ class Harvester:
         return title
 
     @staticmethod
-    def get_resource_body_paragraphs(self, html):
+    def get_resource_body_paragraphs(html):
         if not html.body: return None
 
         texts = [' '.join(text.split()) for text in html.body.find_all(

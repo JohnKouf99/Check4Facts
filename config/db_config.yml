@@ -1,5 +1,5 @@
 dbname: 'check4facts'
 user: 'check4facts'
-password: 'root'
+password: ''
 host: 'localhost'
 port: 5432
