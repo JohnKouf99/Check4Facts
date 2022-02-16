@@ -235,8 +235,8 @@ class FeaturesExtractor:
             n_obj_pars = np.sum(feats, axis=0)[0]
             n_subj_pars = np.sum(feats, axis=0)[1]
             aggr_feats['subjectivity_counts'] = np.array([
-                n_obj_pars / aggr_feats['n_pars'],
-                n_subj_pars / aggr_feats['n_pars']])
+                n_obj_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0,
+                n_subj_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0])
         if 'sentiment' in self.basic_params['included_feats']:
             feats = [d['sentiment'] for d in feats_list]
             aggr_feats['sentiment'] = np.mean(feats, axis=0)
@@ -244,9 +244,9 @@ class FeaturesExtractor:
             feats = [d['sentiment_counts'] for d in feats_list]
             n_neg_pars = np.sum(feats, axis=0)[0]
             n_pos_pars = np.sum(feats, axis=0)[1]
-            aggr_feats['sentiment_counts'] = np.array(
-                [n_neg_pars / aggr_feats['n_pars'],
-                 n_pos_pars / aggr_feats['n_pars']])
+            aggr_feats['sentiment_counts'] = np.array([
+                n_neg_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0,
+                n_pos_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0])
         if 'emotion' in self.basic_params['included_feats']:
             aggr_feats['emotion'] = {}
             for emotion in self.emo_params['prefixes']:
@@ -256,14 +256,15 @@ class FeaturesExtractor:
                 max_ = np.max(feats, axis=0)[2]
                 n_emo_pars = np.sum(feats, axis=0)[3]
                 aggr_feats['emotion'][emotion] = np.array([
-                    min_, avg_, max_, n_emo_pars / aggr_feats['n_pars']])
+                    min_, avg_, max_, n_emo_pars / aggr_feats['n_pars']
+                    if aggr_feats['n_pars'] != 0 else 0])
         if 'pg_polarity_counts' in self.basic_params['included_feats']:
             feats = [d['pg_polarity_counts'] for d in feats_list]
             n_neg_pars = np.sum(feats, axis=0)[0]
             n_pos_pars = np.sum(feats, axis=0)[1]
             aggr_feats['pg_polarity_counts'] = np.array(
-                [n_neg_pars / aggr_feats['n_pars'],
-                 n_pos_pars / aggr_feats['n_pars']])
+                [n_neg_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0,
+                 n_pos_pars / aggr_feats['n_pars'] if aggr_feats['n_pars'] != 0 else 0])
         return aggr_feats
 
     def get_default_sentence_features(self):
@@ -352,6 +353,11 @@ class FeaturesExtractor:
         resources_feats = [self.get_resource_features(
             row.title, row.body, row.sim_par, row.sim_sent, s_text)
             for row in s_resources.itertuples()]
+        # If the statement has no resources then add the default features of a
+        # dummy resource in order to fill its resources' features part
+        if len(resources_feats) == 0:
+            resources_feats.append(self.get_resource_features(
+                None, None, None, None, s_text))
         if resources_feats:
             feats['r'] = {}
             if 'title' in self.basic_params['included_resource_parts']:

@@ -30,8 +30,8 @@ class Predictor:
     def prepare_data(self, features_list):
         features_df = pd.DataFrame(features_list, columns=self.features)
         # Drop statements with no resources
-        idx = list(features_df.dropna().index)
-        features_df = features_df[features_df.index.isin(idx)]
+        # idx = list(features_df.dropna().index)
+        # features_df = features_df[features_df.index.isin(idx)]
         x = np.vstack(features_df.apply(np.hstack, axis=1)).astype('float')
         return features_df.index, x
 
