@@ -1,5 +1,6 @@
 import os
 import string
+import unicodedata
 import time
 
 import pandas as pd
@@ -21,6 +22,8 @@ class SearchEngine:
 
     @staticmethod
     def text_preprocess(text):
+        # Special character removal e.g. \xa0
+        text = unicodedata.normalize("NFKC", text)
         # Punctuation removal
         text = text.translate(str.maketrans('', '', string.punctuation))
         return text

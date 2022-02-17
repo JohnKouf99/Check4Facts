@@ -221,8 +221,15 @@ class DBHandler:
             res = cur.fetchone()[0]
             h_iter = res + 1 if res else 1
             features_record['true_label'] = true_label if true_label is not None else None
-            features_record['predict_label'] = (True if np.argmax(s_preds) == 1 else False) if s_preds is not None else None
-            features_record['predict_proba'] = np.max(s_preds) if s_preds is not None else None
+            if s_preds is None:
+                features_record['predict_label'] = None
+                features_record['predict_proba'] = None
+            elif np.array_equal(s_preds, np.array([-1.0, -1.0])):
+                features_record['predict_label'] = -1
+                features_record['predict_proba'] = -1.0
+            else:
+                features_record['predict_label'] = True if np.argmax(s_preds) == 1 else False
+                features_record['predict_proba'] = np.max(s_preds)
             features_record['harvest_iteration'] = h_iter
             features_record['statement_id'] = s_id
             cur.execute(sql2, features_record)

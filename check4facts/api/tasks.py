@@ -58,7 +58,7 @@ def analyze_task(self, statement):
 
     if harvest_results.empty:
         print(f'[Worker: {os.getpid()}] No resources found for statement id: "{statement_id}"')
-        return
+    #     return
 
     path = os.path.join(DirConf.CONFIG_DIR, 'features_config.yml')  # while using uwsgi
     with open(path, 'r') as f:
@@ -72,15 +72,18 @@ def analyze_task(self, statement):
                             'type': f'{statement_id}'})
     features_results = fe.run(statement_dicts)[0]
 
-    path = os.path.join(DirConf.CONFIG_DIR, 'predict_config.yml')
-    with open(path, 'r') as f:
-        predict_params = yaml.safe_load(f)
-    p = Predictor(**predict_params)
+    if harvest_results.empty:
+        predict_result = np.array([-1.0, -1.0])
+    else:
+        path = os.path.join(DirConf.CONFIG_DIR, 'predict_config.yml')
+        with open(path, 'r') as f:
+            predict_params = yaml.safe_load(f)
+        p = Predictor(**predict_params)
 
-    self.update_state(state='PROGRESS',
-                      meta={'current': 4, 'total': 4,
-                            'type': f'{statement_id}'})
-    predict_result = p.run([features_results]).loc[0, ['pred_0', 'pred_1']].values
+        self.update_state(state='PROGRESS',
+                          meta={'current': 4, 'total': 4,
+                                'type': f'{statement_id}'})
+        predict_result = p.run([features_results]).loc[0, ['pred_0', 'pred_1']].values
 
     resource_records = harvest_results.to_dict('records')
     dbh.insert_statement_resources(statement_id, resource_records)
