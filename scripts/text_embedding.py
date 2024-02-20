@@ -5,7 +5,7 @@ import os
 
 #function to create text embeddings
 
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = ''
 client = OpenAI()
 
 def create_text_embeddings(df, positions ,cols):
