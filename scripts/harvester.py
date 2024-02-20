@@ -14,7 +14,7 @@ import nltk
 from nltk.tokenize import sent_tokenize
 import re
 import time
-import signal
+
 
 
 
@@ -104,13 +104,8 @@ class Harvester:
         #for each paragraph spaw se protaseis? kai vriskw similar sentence
 
         paragraphs = texts.split('\n')
-        sentences = sent_tokenize(texts)
+        # sentences = sent_tokenize(texts)
 
-        # for s in sentences:
-        #     print(s)
-
-        # for text in texts:
-        #     print(text)
             
         #paragraph_tuples
         tuples  = [( np.dot(claim_emb, single_text_embedding(text)), text) for text in paragraphs if not self.is_english(text) 
@@ -121,36 +116,34 @@ class Harvester:
             print('---------------')
             print(paragraphs)
         # #sentence_tuples
-        tuples2  = [( np.dot(claim_emb, single_text_embedding(text)), text) for text in sentences if not self.is_english(text) 
-                    and len(text.split())>3 and single_text_embedding(text) is not None]
-        if not tuples2:
-            print('sentence tuples is empty')
+        # tuples2  = [( np.dot(claim_emb, single_text_embedding(text)), text) for text in sentences if not self.is_english(text) 
+        #             and len(text.split())>3 and single_text_embedding(text) is not None]
+        # if not tuples2:
+        #     print('sentence tuples is empty')
 
 
-        # #exw tis paragraphous kai tis spaw se protaseis me tin nltk 
-        # for p in paragraphs:
-        #     print(p)
+       
         #tuples2  = [( np.dot(claim_emb, single_text_embedding(p)), text) for s in paragraph if not self.is_english(p)]
         if tuples:
             similarity , result = max(tuples, key=lambda x: x[0])
         else:
             similarity, result = None, None
-        if tuples2:
-            similarity2 , result2 = max(tuples2, key=lambda x: x[0])
-        else: 
-            similarity2, result2 = None,None
+        # if tuples2:
+        #     similarity2 , result2 = max(tuples2, key=lambda x: x[0])
+        # else: 
+        #     similarity2, result2 = None,None
 
-        return similarity, result, similarity2, result2
+        return similarity, result #, similarity2, result2
 
 
 
 
     def run(self):
 
-        signal.signal(signal.SIGALRM, self.signal_handler)
+        
 
 
-        df = pd.DataFrame(columns=['id','claim_id', 'title', 'body', 'most_similar_sentence', 'most_similar_paragraph', 
+        df = pd.DataFrame(columns=['id','claim_id', 'title', 'body', 'most_similar_paragraph', 
                                    'harvest_date', 'url', 'most_similar_par_cos','most_similar_sent_cos'])
 
         for url in self.url_list: #na valw orio claims
@@ -170,17 +163,14 @@ class Harvester:
             Title: {title}
             ''')
 
-            try:
-                signal.alarm(self.timeout_seconds)
-                similarity_p, result_p, similarity_s, result_s = self.similary_text(self.claim, body)
-                signal.alarm(0)
-            except TimeoutError:
-                print("Function execution timed out. Skipping function and continuing with the rest of the code.")
-                continue
-
+            
+                
+            similarity_p, result_p = self.similary_text(self.claim, body)
+                
+           
             data = {'id': len(df),'claim_id': self.claim_id, 'title': title, 'body': body.replace("\n", " "), 
-                    'most_similar_sentence': result_s.replace('\n',' ').replace('\xa0',''), 'most_similar_paragraph': result_p.replace('\xa0',''), 
-                    'harvest_date': datetime.date.today() , 'url': url, 'most_similar_par_cos': result_p, 'most_similar_sent_cos':result_s}
+                  'most_similar_paragraph': result_p.replace('\xa0',''), 
+                    'harvest_date': datetime.date.today() , 'url': url, 'most_similar_par_cos': result_p}
 
             df.loc[len(df)] = data
 
@@ -191,8 +181,6 @@ class Harvester:
             print()
             print(f'''Most similar paragraph: {result_p}
 Cosine similarity: {similarity_p}
-Most similar sentence: {result_s}
-Cosine similarity: {similarity_s}
                   ''')
 
 
