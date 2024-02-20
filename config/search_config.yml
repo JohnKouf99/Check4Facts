@@ -1,8 +1,0 @@
-basic:
-  total_num: 20  # Total results to get, use only multiples of 'num' param
-api_specific:
-  cx: 'SECRET_ENGINE_ID'
-  lr: 'lang_el'
-  num: 10  # max 10 results can be obtained in 1 query/page
-standard_query:
-  api_key: 'SECRET_API_KEY'
