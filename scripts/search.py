@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from requests.exceptions import SSLError
 from urllib.parse import urlparse
-
+import re
 from nltk.tokenize import sent_tokenize
 chrome_options = Options()
 chrome_options.add_argument("--headless")  # Run Chrome in headless mode
@@ -22,7 +22,7 @@ chrome_options.add_argument("--headless")  # Run Chrome in headless mode
 
 
 sites_source = ["www.ellinikahoaxes.gr","factcheckgreek.afp.com","check4facts.gr","factcheckcyprus.org",'www.youtube.com']
-doc_extensions = ["doc", "docx", 'php', 'pdf']
+doc_extensions = ["doc", "docx", 'php', 'pdf', 'txt', 'theFile', 'file', 'xls']
 
 class GoogleSearch:
 
@@ -37,6 +37,7 @@ class GoogleSearch:
     def google_search(self, text, total_num):   
         max_iter=0
         urls = set()
+        pattern = r'[./=]([a-zA-Z0-9]+)$'
         
         self.driver.get(f"{self.engine_url}/search?q={text}")
         self.driver.implicitly_wait(2)  
@@ -97,10 +98,16 @@ class GoogleSearch:
                 #if the url actually has content
                 if(response.content):
                     #if url is not a file of some sort
-                    file_extension = h.a.get('href').lower().split('.')[-1]
+                    match = re.search(pattern, h.a.get('href')[-6:])
+                    if match:
+                        file_extension = match.group(1)
+                    else:
+                        file_extension = None
+                    #file_extension = h.a.get('href').lower().split('.')[-1]
+                    
                     url_domain = urlparse(h.a.get('href')).netloc
                     # print(url_domain)
-                    if file_extension not in doc_extensions and url_domain not in sites_source:
+                    if file_extension not in doc_extensions and url_domain not in sites_source and not '/document/' in h.a.get('href'):
                         #print(h.a.get('href'))
                         urls.add(h.a.get('href'))
                         
