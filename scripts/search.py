@@ -21,7 +21,8 @@ chrome_options.add_argument("--headless")  # Run Chrome in headless mode
 
 
 
-sites_source = ["www.ellinikahoaxes.gr","factcheckgreek.afp.com","check4facts.gr","factcheckcyprus.org",'www.youtube.com']
+sites_source = ["www.ellinikahoaxes.gr","factcheckgreek.afp.com","www.check4facts.gr",
+                "factcheckcyprus.org",'www.youtube.com', 'www.linkedin.com']
 doc_extensions = ["doc", "docx", 'php', 'pdf', 'txt', 'theFile', 'file', 'xls']
 
 class GoogleSearch:
