@@ -147,30 +147,44 @@ class Harvester:
                                    'harvest_date', 'url', 'most_similar_par_cos','most_similar_sent_cos'])
 
         for url in self.url_list: #na valw orio claims
+            
+            print(f"Harvesting url: {url}")
+
             html = self.get_html_text(url)
             if html is None:
                 print(f'''Invalid url: {url}, 
                       skipping procedure....''')
                 continue
             title = self.get_title(html)
+            if title is None or len(title) <=3:
+                print('No title found')
+                print('skipping procedure....')
+                continue
             body = self.get_body(html)
+            if(len(body)>300000):
+                print('Web page is too long')
+                print('skipping procedure....')
+                continue
 
             if((len(body.split())<50) or body is None):
                 print('body is none')
+                print('skipping procedure....')
                 continue
+
             print(f'''
-            URL: {url}
+            
             Title: {title}
             ''')
 
             
                 
             similarity_p, result_p = self.similary_text(self.claim, body)
+
                 
            
             data = {'id': len(df),'claim_id': self.claim_id, 'title': title, 'body': body.replace("\n", " "), 
-                  'most_similar_paragraph': result_p.replace('\xa0',''), 
-                    'harvest_date': datetime.date.today() , 'url': url, 'most_similar_par_cos': result_p}
+                  'most_similar_paragraph': result_p.replace('\xa0','') if result_p is not None else '', 
+                    'harvest_date': datetime.date.today() , 'url': url, 'most_similar_par_cos': similarity_p}
 
             df.loc[len(df)] = data
 
