@@ -1,7 +1,0 @@
-test1 -> df apo tin postgre vasi
-reuters_df -> df apo ti selida reuters
-snopes_df -> df apo ti selida snopes
-web_scraping-> df apo web scrapig greek hoaxes, factcheckgreek,factcheckafp,fullfacts.org
-statements,res2,result -> testing dfs apo ti postgre vasi
-df1->
-df_final-> id,claim,embedding,label for all the data collected
