@@ -265,10 +265,10 @@ def MLP(X_train, X_test, y_train, y_test):
     classification = metrics.classification_report(np.array(y_test), y_pred )
     scores = cross_val_score(mlp_classifier, X_train,np.array(y_train), cv=10)
 
-    precision = metrics.precision_score(y_test, y_pred, average='weighted')
-    recall = metrics.recall_score(y_test, y_pred, average='weighted')
-    accuracy = metrics.accuracy_score(y_test, y_pred,)
-    f1 = metrics.f1_score(y_test, y_pred, average='weighted')
+    precision = metrics.precision_score(y_test, y_pred)
+    recall = metrics.recall_score(y_test, y_pred)
+    accuracy = metrics.accuracy_score(y_test, y_pred)
+    f1 = metrics.f1_score(y_test, y_pred)
 
     #print results and plot confusion matrix
     print ("Model Accuracy:", np.round(accuracy,3))
