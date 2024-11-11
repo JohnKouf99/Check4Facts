@@ -154,6 +154,7 @@ class Interface:
         self.initial_train_parser.add_argument(
             '--train_settings', type=str, default='train_config.yml',
             help='name of YAML configuration file containing training params')
+        
 
         cmd_args = self.parser.parse_args()
 

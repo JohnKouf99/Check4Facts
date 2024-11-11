@@ -1,17 +1,20 @@
 import os
 import string
 import time
-
+import polyglot
 import numpy as np
 import pandas as pd
 import spacy
 from nltk.corpus import stopwords
 from snowballstemmer import stemmer
-from polyglot.text import Text
-
+from polyglot.text import Text #from polyglot.text import Text
+import openai 
+from openai import OpenAI
+import tiktoken
 from transformers import AutoTokenizer, AutoModel
 import ollama
-
+import unicodedata
+from sklearn.decomposition import PCA
 from check4facts.config import DirConf
 
 
@@ -63,18 +66,37 @@ class FeaturesExtractor:
     def _initialize_ollama_llm(self):
         llm_embeddings = self.llm_embedding_settings.get('ollama')
         model_name = llm_embeddings.get('model_name', 'ilsp/meltemi-instruct:latest')
-        # self.embedding_model = ollama.load_model(model_name)
-        ollama.embeddings(model=model_name, prompt='test', keep_alive=-1) # keep the model into memory 
+        #CHANGED
+        #self.embedding_model = ollama.load_model(model_name)
+        embeddings = ollama.embeddings(model=model_name, prompt='test', keep_alive=-1) # keep the model into memory 
+        #get embeddings size for ollama
+        self.embedding_size = len(np.array(embeddings['embedding']))
+        
+       
+
         # def embed(x:str, model:str='llama3:8b-instruct-q8_0'):
         #     return np.array(ollama.embeddings(model=model, prompt=x)['embedding'])
 
 
     def _initialize_transformers_llm(self):
         llm_embeddings = self.llm_embedding_settings.get('transformers')
-        model_name = llm_embeddings.get('model_name', 'bert-base-uncased')
+        model_name = llm_embeddings.get('model_name', 'nlpaueb/bert-base-greek-uncased-v1')
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.embedding_model = AutoModel.from_pretrained(model_name)
         self.hidden_size = self.embedding_model.config.hidden_size
+        #5/10
+        self.embedding_size = self.embedding_model.config.hidden_size
+
+    #4/10
+    def _initialize_openai_llm(self):
+        os.environ['OPENAI_API_KEY'] = self.llm_embedding_settings.get('openai').get('api_key')
+        self.client = OpenAI()
+        model_name = self.llm_embedding_settings.get('openai').get('model_name')
+        response = self.client.embeddings.create(input='test prompt', model=model_name)
+        embedding = response.data[0].embedding
+        embedding_array = np.array(embedding)
+        self.embedding_size = len(embedding_array)
+        
 
     def initialize_llm(self):
         self.llm_embedding_method = self.llm_embedding_settings["method"]
@@ -83,33 +105,61 @@ class FeaturesExtractor:
         elif self.llm_embedding_method.lower() == 'ollama':
             self._initialize_ollama_llm()
         else:
-            pass
+            self._initialize_openai_llm() #4/10
 
     def get_llm_embeddings(self, text):
+        if text is None:
+            #print('text is none')
+            return None
         if self.llm_embedding_method == 'transformers':
-            inputs = self.tokenizer(text, return_tensors='pt', truncation=True,
-                                     max_length=self.embedding_model.config.hidden_size)
+            #4/10 changed from max_length=self.embedding_model.config.hidden_size
+            inputs = self.tokenizer(text=text, return_tensors='pt', truncation=True,
+                                     max_length=self.embedding_model.config.max_position_embeddings) 
+
             outputs = self.embedding_model(**inputs)
             embeddings = outputs.last_hidden_state[:, 0, :].detach().numpy()
+            #print(embeddings)
             return embeddings.flatten()
         elif self.llm_embedding_method == 'ollama':
             llm_embeddings = self.llm_embedding_settings.get('ollama')
             model_name = llm_embeddings.get('model_name', 'ilsp/meltemi-instruct:latest')
             response = ollama.embeddings(model=model_name, prompt=text, keep_alive=-1) # keep the model into memory 
             embeddings = response['embedding'] # this is a list
-            print(text)
+            #print(text)
             return np.array(embeddings)
         
-        elif self.llm_embedding_method == 'api':
-            pass
+            #4/10, #7/10
+        elif self.llm_embedding_method == 'openai':
+             model_name =self.llm_embedding_settings.get('openai').get('model_name')
+             #7/10 if the text is too long (max limit of tokens is 8192), truncate from the end
+             tokenizer = tiktoken.encoding_for_model(self.llm_embedding_settings.get('openai').get('model_name'))
+             tokenized_text = tokenizer.encode(text)
+             token_count = len(tokenized_text)   
+             max_tokens = self.llm_embedding_settings.get('openai').get('max_tokens')
+             #print(token_count)
+             if token_count > max_tokens:
+                 truncated_tokenized_text = tokenized_text[:max_tokens]
+                 truncated_text = tokenizer.decode(truncated_tokenized_text)
+                 #print(truncated_text)
+                 response = self.client.embeddings.create(
+                 input=truncated_text,model=model_name)
+                 return np.array(response.data[0].embedding, dtype=np.float64)
+             else:
+                response = self.client.embeddings.create(
+                input=text,model=model_name)
+                return np.array(response.data[0].embedding, dtype=np.float64)
+             pass
             # response = openai.Embedding.create(input=text, model=self.llm_embeddings.get('model', 'text-embedding-ada-002'))
             # return np.array(response['data'][0]['embedding'])
         else:
             raise ValueError("Invalid embedding method selected for LLM embeddings")
 
-
+    #changed it to match the transformer's model preprocessing method
     @staticmethod
-    def text_preprocess(text):
+    def text_preprocess(text,transf):
+        if(transf):
+             text = ''.join(c for c in unicodedata.normalize('NFD', text)
+                   if unicodedata.category(c) != 'Mn').lower()
         text = text.translate(str.maketrans('', '', string.punctuation))
         text = text.lower()
         text = ' '.join([word for word in text.split() if
@@ -121,7 +171,7 @@ class FeaturesExtractor:
         return sent_doc.vector
 
     def get_similarity(self, sent_doc, statement):
-        statement_doc = self.nlp(self.text_preprocess(statement))
+        statement_doc = self.nlp(self.text_preprocess(statement, transf=False))
         return sent_doc.similarity(statement_doc)
 
     def get_subjectivity(self, annots):
@@ -160,14 +210,45 @@ class FeaturesExtractor:
         return np.array([neg_tokens, pos_tokens])
 
     def aggregate_sentence_features(self, feats_list):
+       
         n_sentences = len(feats_list)
         aggr_feats = {'fertile_terms': np.sum([
             f['fertile_terms'] for f in feats_list])}
         
+        
         if 'llm_embeddings' in self.basic_params['included_feats']:
-            feats = [d.get('llm_embeddings', 
-                           np.zeros(self.embedding_model.config.hidden_size)) for d in feats_list]  # Assuming embedding size is 768
-            aggr_feats['llm_embeddings'] = np.mean(feats, axis=0)
+            #4/10 changes
+            if self.llm_embedding_method.lower() == 'ollama':
+                feats = [d.get('llm_embeddings', 
+                np.zeros(self.embedding_size)) for d in feats_list]  # Assuming embedding size is 768
+            elif self.llm_embedding_method.lower() == 'transformers':
+                 feats = [d.get('llm_embeddings', 
+                np.zeros(self.embedding_model.config.hidden_size)) for d in feats_list]
+            else: 
+                 feats = [d.get('llm_embeddings', 
+                 np.zeros(self.embedding_size)) for d in feats_list]
+            #TODO
+            #insert PCA analysis instead of the mean value of all llm_embeddings
+            #prior implementation
+            #aggr_feats['llm_embeddings'] = np.mean(feats, axis=0)
+            
+            #7/10
+            
+            
+            #remove zero valued arrays
+            feats = np.array([np.array(arr) for arr in feats if not np.all(arr==0)])
+            #print(feats.shape)
+            #start the pca transformation
+            if feats.size!=0:
+                pca = PCA(n_components=1)
+                feats = np.transpose(feats)
+                feats = pca.fit_transform(feats)
+                #aggr_feats['llm_embeddings'] = np.mean(aggr_feats['llm_embeddings'], axis=0)
+                aggr_feats['llm_embeddings'] = feats.flatten()
+                #print(aggr_feats['llm_embeddings'])
+
+
+
         if 'embedding' in self.basic_params['included_feats']:
             feats = [d['embedding'] for d in feats_list]
             aggr_feats['embedding'] = np.mean(feats, axis=0)
@@ -341,7 +422,21 @@ class FeaturesExtractor:
         return feats
 
     def get_sentence_features(self, sent, statement):
-        sent_doc = self.nlp(self.text_preprocess(sent)[:self.nlp.max_length])
+        
+        #8/10
+        #some sentences are equal to float('nan') so it needs handling
+        if pd.isna(sent):
+            if 'llm_embeddings' in self.basic_params['included_feats']:
+                feats = {'fertile_terms': 0}
+                feats['llm_embeddings'] = np.zeros(self.embedding_size)
+                return feats
+            else: 
+                sent = ' '
+        #if transformers are initialized, text preprocessing should be different 16/10
+        if self.llm_embedding_method.lower() == 'transformers':
+            sent_doc = self.nlp(self.text_preprocess(sent,transf=True)[:self.nlp.max_length])
+        else:
+            sent_doc = self.nlp(self.text_preprocess(sent,transf=False)[:self.nlp.max_length])
         # annots = [
         #     self.lexicon[self.lexicon['lemma'] == t.lemma_]
         #     for t in sent_doc if t.lemma_ in self.lexicon['lemma'].values]
@@ -378,10 +473,17 @@ class FeaturesExtractor:
             else:
                 feats['title'] = self.get_default_sentence_features()
         if 'body' in self.basic_params['included_resource_parts']:
-            if body:
-                pars_feats = [self.get_sentence_features(par, statement)
-                              for par in body.splitlines()]
-                feats['body'] = self.aggregate_body_features(pars_feats)
+            if body and pd.notna(body):
+                if 'llm_embeddings' in self.basic_params['included_feats']:
+                    #take the whole body as a sentence and dont break it into sub-sentences
+                    feats['body'] = self.get_sentence_features(body, statement) #4/10
+                else:
+                    #TODO if body exceeds the limit range, truncate it from the end [:max_token_limit]
+                    pars_feats = [self.get_sentence_features(par, statement)
+                                    for par in body.splitlines()]
+                    feats['body'] = self.aggregate_body_features(pars_feats)
+                
+                
             else:
                 feats['body'] = self.get_default_sentence_features()
                 feats['body']['n_pars'] = 0
@@ -400,6 +502,7 @@ class FeaturesExtractor:
         return feats
 
     def get_statement_features(self, d):
+
         s_text = d['s_text']
         s_resources = d['s_resources'].where(pd.notnull(d['s_resources']), None)
         feats = {'s': self.get_sentence_features(s_text, s_text), 'r': None}
@@ -412,31 +515,94 @@ class FeaturesExtractor:
             resources_feats.append(self.get_resource_features(
                 None, None, None, None, s_text))
         
-        # Add embeddings directly on the body without splitting it 
         if 'llm_embeddings' in self.basic_params['included_feats']:
             # TODO: Make sure the dimensions are aligned if any of the title, body etc are not included.
             # eg if title features where missing, body llm embeddings would come on the same position of the title's.
             llm_embeddings_for_all_resources = []
+            #flag that prohibits extra addition of the s_statement embedding to the r_llm feature
+            flag=False
+            #8/10 added pd.isna() condition because of nan values on the harvest dataset
             for row in s_resources.itertuples():
                 resource_embeddings = []
-                title_embedding = self.get_llm_embeddings(text=row.title)
-                body_embedding = self.get_llm_embeddings(text=row.body)
-                sim_par_embedding = self.get_llm_embeddings(text=row.sim_par)
-                sim_sent_embedding = self.get_llm_embeddings(text=row.sim_sent)
-                s_text_embedding = self.get_llm_embeddings(text=s_text)
-                resource_embeddings = [title_embedding, body_embedding, sim_par_embedding, sim_sent_embedding,  s_text_embedding]
-                resource_embeddings_np = [np.array(x) for x in resource_embeddings]
-                llm_embeddings_for_all_resources.append(resource_embeddings_np)
-            llm_embeddings_for_all_resources = np.array(llm_embeddings_for_all_resources).flatten()
+                if not pd.isna(row.title):
+                    title_embedding = self.get_llm_embeddings(text=row.title)
+                else:
+                    title_embedding = None
+                if not pd.isna(row.body):
+                     body_embedding = self.get_llm_embeddings(text=row.body)
+                else:
+                     body_embedding = None
+                if not pd.isna(row.sim_par):
+                    sim_par_embedding = self.get_llm_embeddings(text=row.sim_par)
+                else:
+                    sim_par_embedding = None
+                if not pd.isna(row.sim_sent):
+                    sim_sent_embedding = self.get_llm_embeddings(text=row.sim_sent)
+                else:
+                    sim_sent_embedding = None
+                if not pd.isna(s_text):
+                    s_text_embedding = self.get_llm_embeddings(s_text)
+                else:
+                    s_text_embedding = None
 
+                # body_embedding = self.get_llm_embeddings(text=row.body)
+                # sim_par_embedding = self.get_llm_embeddings(text=row.sim_par)
+                # sim_sent_embedding = self.get_llm_embeddings(text=row.sim_sent)
+                # s_text_embedding = self.get_llm_embeddings(text=s_text)
+
+                #5/10 if embedding is none i dont want to add it to the array
+                if title_embedding is not None:  
+                    resource_embeddings.append(title_embedding)
+                if body_embedding is not None:
+                    resource_embeddings.append(body_embedding)
+                if sim_par_embedding is not None:
+                    resource_embeddings.append(sim_par_embedding)
+                if sim_sent_embedding is not None:
+                    resource_embeddings.append(sim_sent_embedding)
+                #8/10 - Statement is NOT part of a resource so it will not be added to r_llm
+                #TODO Comment it out in the future
+                # if s_text_embedding is not None and flag==False:
+                #     resource_embeddings.append(s_text_embedding)
+                #     flag=True
+
+                #print(np.array(resource_embeddings).shape)
+                #resource_embeddings = [title_embedding, body_embedding, sim_par_embedding, sim_sent_embedding,  s_text_embedding]
+                resource_embeddings = np.array(resource_embeddings).flatten()
+                resource_embeddings_np = [np.array(x, dtype=np.float64) for x in resource_embeddings]
+                
+                #print(np.array(resource_embeddings_np).shape)
+                llm_embeddings_for_all_resources.append(resource_embeddings_np)
+    
+                # Check shapes
+                # print(f"title_embedding shape: {np.shape(title_embedding)}")
+                # print(f"body_embedding shape: {np.shape(body_embedding)}")
+                # print(f"sim_par_embedding shape: {np.shape(sim_par_embedding)}")
+                # print(f"sim_sent_embedding shape: {np.shape(sim_sent_embedding)}")
+                # print(f"s_text_embedding shape: {np.shape(s_text_embedding)}")
+                # print()
+            
+            #llm_embeddings_for_all_resources = np.array(llm_embeddings_for_all_resources).flatten()
+            if llm_embeddings_for_all_resources: 
+                llm_embeddings_for_all_resources = np.concatenate([np.array(sub_array, dtype=np.float64) 
+                for sub_array in llm_embeddings_for_all_resources])    
+                                                       
+            
+            
         if resources_feats:
             feats['r'] = {}
             if 'title' in self.basic_params['included_resource_parts']:
                 feats['r']['title'] = self.aggregate_sentence_features(
                     [d['title'] for d in resources_feats])
             if 'body' in self.basic_params['included_resource_parts']:
-                feats['r']['body'] = self.aggregate_bodies_features(
-                    [d['body'] for d in resources_feats])
+                 if 'llm_embeddings' in self.basic_params['included_feats']:
+                     #4/10 (i want the body to be treated as a sentence when it comes to llm embedding)
+                    feats['r']['body'] = self.aggregate_sentence_features(
+                            [d['body'] for d in resources_feats])
+                 else:
+                    #if we are not implementing llm embeddings, continue as is
+                    feats['r']['body'] = self.aggregate_bodies_features(
+                      [d['body'] for d in resources_feats]) 
+                 
             if 'sim_par' in self.basic_params['included_resource_parts']:
                 feats['r']['sim_par'] = self.aggregate_sentence_features(
                     [d['sim_par'] for d in resources_feats])
@@ -446,6 +612,38 @@ class FeaturesExtractor:
             # TODO: Make sure these are added correctly.
             if 'llm_embeddings' in self.basic_params['included_feats']:
                 feats['r']['llm'] = llm_embeddings_for_all_resources
+
+            #10/10 create a final embedding that contains all the information gathered
+            if 'llm_embeddings' in self.basic_params['included_feats']:
+                 #self.text_preprocess(sent)[:self.nlp.max_length]
+                 final_emb = {}
+                 #final_feats = list()
+                 #final_emb['s_llm'] = feats['s']
+                 
+                 if 'title' in self.basic_params['included_resource_parts']:
+                     final_emb['title'] = feats['r']['title']
+                 if 'body' in self.basic_params['included_resource_parts']:
+                     final_emb['body'] = feats['r']['body']
+                 if 'sim_par' in self.basic_params['included_resource_parts']:
+                     final_emb['sim_par'] = feats['r']['sim_par']
+                 if 'sim_sent' in self.basic_params['included_resource_parts']:
+                     final_emb['sim_sent'] = feats['r']['sim_sent']
+                
+                 training_emb = self.aggregate_sentence_features([d for d in final_emb.values()])
+                 feats['r']['final'] = training_emb
+
+
+                 
+                 
+
+
+
+
+
+
+
+
+
         # result = {k: (np.nan_to_num(v) if np.isnan(v).any() else v) for k, v in
         #           flatten_dict(feats).items()}
         result = flatten_dict(feats)

@@ -19,6 +19,10 @@ class SearchEngine:
         self.service = build(
             'customsearch', 'v1', cache_discovery=False,
             developerKey=self.standard_query_params['api_key'])
+        #17/10 exclude fact checking sites from searching for development purposes
+        self.excluded_sites = ["ellinikahoaxes.gr", "factcheckgreek.afp.com"
+                               ,"factchecker.gr","factcheckcyprus.org",
+                               "check4facts.gr"]
 
     @staticmethod
     def text_preprocess(text):
@@ -44,6 +48,16 @@ class SearchEngine:
                 print(type(e), '::', e)
                 time.sleep(60 * 60 * 24)
         result = pd.DataFrame(search_results).reset_index()
+
+        #17/10 do not include the search sites from the excluded sites list, for development purposes
+        if 'link' in result.columns:
+            if self.excluded_sites:
+                for site in self.excluded_sites:
+                    result = result[~result['link'].str.contains(site)]
+        if result.empty:
+            result = result[['index']]
+
+
         return result
 
     def run(self, statement_texts):

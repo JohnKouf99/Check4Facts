@@ -48,7 +48,7 @@ class Harvester:
     @staticmethod
     def save_content_to_xml(content, f_name):
         out = os.path.join(DirConf.HARVEST_XML_DIR, f_name)
-        with open(out, 'w') as out_f:
+        with open(out, 'w', encoding='utf-8') as out_f: #added encoding parameter
             out_f.write(content)
         return
 

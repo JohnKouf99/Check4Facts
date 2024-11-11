@@ -1,0 +1,74 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: harvest_dev",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/Check4Facts/check4facts/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "harvest_dev",
+            ],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/Check4Facts/check4facts:${workspaceFolder}/Check4Facts:$PYTHONPATH"
+            },
+            "pythonPath": "${workspaceFolder}/Check4Facts/.venv/bin/python",
+            "cwd": "${workspaceFolder}/Check4Facts/check4facts"
+        },
+
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal", // integratedTerminal
+            "env": {
+                "PYTHONPATH": "${workspaceRoot};$PYTHONPATH"
+            },
+            "args": "${command:pickArgs}",
+            "cwd": "${workspaceFolder}/check4facts"
+        },
+            {
+        "name": "Python: CLI Analyze Task Demo",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/Check4Facts/check4facts/cli.py",
+        "console": "integratedTerminal",
+        "args": [
+            "analyze_task_demo",
+            "--search_settings", "../config/search_config.yml",
+            "--harvest_settings", "../config/harvest_config.yml",
+            "--features_settings", "../config/features_config.yml",
+            "--predict_settings", "../config/predict_config.yml",
+            "--db_settings", "../config/db_config.yml"
+        ],
+        "justMyCode": true,
+        "env": {
+            "PYTHONPATH": "${workspaceFolder}/Check4Facts/check4facts:${workspaceFolder}/Check4Facts:$PYTHONPATH"
+        },
+        "pythonPath": "${workspaceFolder}/Check4Facts/.venv/bin/python",
+        "cwd": "${workspaceFolder}/Check4Facts/check4facts"
+    },
+            {
+        "name": "Python: search_dev",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/Check4Facts/check4facts/cli.py",
+        "console": "integratedTerminal",
+        "args": [
+            "search_dev",
+        ],
+        "justMyCode": true,
+        "env": {
+            "PYTHONPATH": "${workspaceFolder}/Check4Facts/check4facts:${workspaceFolder}/Check4Facts:$PYTHONPATH"
+        },
+        "pythonPath": "${workspaceFolder}/Check4Facts/.venv/bin/python",
+        "cwd": "${workspaceFolder}/Check4Facts/check4facts"
+    }
+    ]
+}
